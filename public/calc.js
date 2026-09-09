@@ -74,9 +74,9 @@ if (form) {
 			row('Сумма риска', money(r.riskMoney), r.riskPercentOfBalance === null ? '' : r.riskPercentOfBalance + '% от баланса'),
 			row('Стоп', nf(r.distance, d) + ' в цене', nf(r.stopPips, 1) + ' пунктов'),
 			row('Объём позиции', nf(r.units, 4) + ' ' + r.unitName, 'размер контракта ' + nf(r.contract, 4)),
-			row('Стандартные лоты', nf(r.standardLots, 4)),
-			row('Мини-лоты', nf(r.miniLots, 3)),
-			row('Микро-лоты', nf(r.microLots, 2)),
+			row('Сколько лотов открыть', nf(r.standardLots, 4) + ' стандартных лота', 'это главное число — его вводишь в терминале'),
+			row('Мини-лоты', nf(r.miniLots, 3), 'если брокер считает в мини-лотах'),
+			row('Микро-лоты', nf(r.microLots, 2), 'если брокер считает в микро-лотах'),
 			row('Стоимость пункта', money(r.pipValuePosition) + ' на позицию', money(r.pipValuePerLot) + ' на один стандартный лот'),
 		]
 		if (r.rr) rows.push(row('Цель при ' + r.rr + 'R', r.target === null ? '—' : nf(r.target, d), 'потенциал ' + money(r.targetProfit)))
