@@ -1,6 +1,6 @@
 import {randomBytes,createHash,scrypt as rawScrypt,timingSafeEqual} from 'node:crypto';
 import {promisify} from 'node:util';
-import {seed,validJournal} from '../shared.mjs';
+import {seed,validJournal} from '../shared.mjs';import {createCommunity} from './community.mjs';
 const scrypt=promisify(rawScrypt),sha=x=>createHash('sha256').update(x).digest('hex');
 const fail=(status,message)=>{throw Object.assign(Error(message),{status})};
 const read=(store,key)=>store.getWithMetadata(key,{type:'json',consistency:'strong'});
@@ -15,8 +15,9 @@ function credentials(b){const name=String(b?.username||'').trim().toLowerCase(),
 async function cas(store,key,change){for(let i=0;i<5;i++){const prev=await read(store,key);const next=await change(prev?.data);const r=await store.setJSON(key,next,prev?{onlyIfMatch:prev.etag}:{onlyIfNew:true});if(r.modified)return next}fail(409,'Данные изменились в другом окне. Обнови журнал и повтори.');}
 async function limit(store,key,max){const now=Date.now();await cas(store,sha(key),old=>{const active=old&&old.until>now;if(active&&old.count>=max)fail(429,'Слишком много попыток. Подожди 10 минут.');return{until:active?old.until:now+600000,count:active?old.count+1:1}})}
 function active(record,token){if(!record||record.deleted)return null;return record.sessions?.find(s=>s.hash===sha(token)&&s.expires>Date.now())}
-export function createHandler({getStore,env=process.env}){return async(req,context={})=>{
- try{
+export function createHandler({getStore,env=process.env}){
+ const community=createCommunity({getStore,env});
+ return async(req,context={})=>{ 
   if(!env.PUBLIC_URL)fail(503,'В Netlify задай PUBLIC_URL равным HTTPS-адресу сайта и выполни повторный deploy.');
   const expected=new URL(env.PUBLIC_URL).origin;const url=new URL(req.url);
   if(!expected.startsWith('https://'))fail(503,'PUBLIC_URL должен начинаться с https://.');
@@ -69,6 +70,7 @@ export function createHandler({getStore,env=process.env}){return async(req,conte
    await cas(users,key,current=>{authorize(current);if(current.password!==u.password)fail(401,'Пароль изменился.');return{deleted:true}});
    return json(200,{ok:true},{'Set-Cookie':cookie('','',0)})
   }
-  fail(404,'Действие не найдено.');
+const extra=await community({path,method:req.method,username,parse,req,json});
+if(extra)return extra;  fail(404,'Действие не найдено.');
  }catch(e){if(!e.status)console.error('FIZY API error:',e.message);return json(e.status||500,{error:e.status?e.message:'Ошибка хранилища. Изменения не подтверждены. Повтори позже.'})}
 }}
