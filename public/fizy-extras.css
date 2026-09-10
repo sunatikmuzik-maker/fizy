@@ -1,0 +1,112 @@
+/* FIZY Journal — стили новых разделов */
+.fx-view{display:flex;flex-direction:column;gap:18px}
+.fx-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px}
+@media(max-width:960px){.fx-grid{grid-template-columns:1fr}}
+.fx-live{display:inline-flex;align-items:center;gap:7px;font-size:12px;color:#16a34a;font-weight:600}
+.fx-live i{width:8px;height:8px;border-radius:50%;background:#16a34a;box-shadow:0 0 0 0 rgba(22,163,74,.5);animation:fxPulse 2s infinite}
+@keyframes fxPulse{70%{box-shadow:0 0 0 8px rgba(22,163,74,0)}100%{box-shadow:0 0 0 0 rgba(22,163,74,0)}}
+
+.fx-filters{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+.fx-chip{border:1px solid rgba(0,0,0,.12);background:#fff;border-radius:999px;padding:6px 13px;font-size:12px;font-weight:600;cursor:pointer;letter-spacing:.02em}
+.fx-chip.is-active{background:#1f2937;color:#fff;border-color:#1f2937}
+.fx-tag{background:rgba(136,101,30,.12);color:#88651e;border-radius:6px;padding:2px 7px;font-size:11px;font-weight:700;letter-spacing:.03em}
+
+/* лента новостей */
+.fx-feed{display:flex;flex-direction:column;gap:10px;max-height:520px;overflow:auto;padding-right:4px}
+.fx-news-item{border-left:3px solid rgba(0,0,0,.12);background:rgba(0,0,0,.02);border-radius:0 10px 10px 0;padding:11px 13px}
+.fx-news-item.is-hot{border-left-color:#e11d48;background:rgba(225,29,72,.05)}
+.fx-news-title{font-weight:600;line-height:1.4;font-size:14px}
+.fx-alert{margin-right:6px}
+.fx-news-meta{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:7px;font-size:11px}
+.fx-news-foot{justify-content:space-between;align-items:center;margin-top:10px}
+
+/* сессии */
+.fx-map{position:relative;height:190px;border-radius:14px;margin:6px 0 14px;
+  background:radial-gradient(circle at 1px 1px,rgba(0,0,0,.14) 1px,transparent 0) 0 0/9px 9px,rgba(0,0,0,.02)}
+.fx-pin{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;font-weight:600;white-space:nowrap}
+.fx-pin i{width:9px;height:9px;border-radius:50%;background:rgba(0,0,0,.25)}
+.fx-pin.is-open i{background:var(--pin);box-shadow:0 0 0 5px color-mix(in srgb,var(--pin) 25%,transparent)}
+.fx-pin b{background:#fff;border-radius:6px;padding:2px 7px;box-shadow:0 2px 8px rgba(0,0,0,.1)}
+.fx-session-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+.fx-session{border:1px solid rgba(0,0,0,.08);border-radius:12px;padding:11px;background:#fff}
+.fx-session.is-open{border-color:rgba(22,163,74,.4);background:rgba(22,163,74,.04)}
+.fx-session-top{display:flex;align-items:center;gap:6px;font-size:13px}
+.fx-session-clock{margin-left:auto;font-variant-numeric:tabular-nums;color:#6b7280}
+.fx-dot{width:8px;height:8px;border-radius:50%}
+.fx-session-window{font-size:12px;color:#6b7280;margin:4px 0;font-variant-numeric:tabular-nums}
+.fx-session-state{font-size:11px;font-weight:800;letter-spacing:.05em;color:#9ca3af}
+.fx-session.is-open .fx-session-state{color:#16a34a}
+.fx-overlap{grid-column:1/-1;font-size:12px;background:rgba(136,101,30,.08);border-radius:10px;padding:9px 12px}
+
+/* призрачный счёт */
+.fx-ghost-body{display:grid;grid-template-columns:190px minmax(0,1fr);gap:18px;align-items:center}
+@media(max-width:860px){.fx-ghost-body{grid-template-columns:1fr}}
+.fx-ghost-total strong{font-size:38px;line-height:1}
+.fx-ghost-total span{color:#9ca3af;margin-left:6px}
+.fx-ghost-factors{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+.fx-factor{display:flex;gap:11px;align-items:center;border:1px solid rgba(0,0,0,.07);border-radius:12px;padding:10px}
+.fx-ring{width:52px;height:52px;flex:0 0 52px;border-radius:50%;display:grid;place-items:center;
+  background:conic-gradient(#88651e var(--deg,0deg),rgba(0,0,0,.07) 0)}
+.fx-ring span{width:40px;height:40px;border-radius:50%;background:#fff;display:grid;place-items:center;font-size:13px;font-weight:700;line-height:1}
+.fx-ring small{font-size:8px;color:#9ca3af;display:block}
+.fx-weight{font-size:11px;background:rgba(0,0,0,.06);border-radius:5px;padding:1px 5px}
+
+/* идеи */
+.fx-hero{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
+.fx-stats{display:grid;grid-template-columns:repeat(2,minmax(140px,1fr));gap:10px}
+.fx-stat{border:1px solid rgba(0,0,0,.07);border-radius:12px;padding:11px}
+.fx-stat span{font-size:10px;letter-spacing:.09em;color:#9ca3af;font-weight:700}
+.fx-stat strong{display:block;font-size:24px;margin:2px 0}
+.fx-stat small{color:#9ca3af;font-size:11px}
+.fx-idea-toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.fx-idea-toolbar input{max-width:280px}
+.fx-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-top:12px}
+.fx-card,.fx-win{border:1px solid rgba(0,0,0,.08);border-radius:14px;padding:13px;background:#fff}
+.fx-card-head{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:6px}
+.fx-card h4{margin:4px 0 8px;font-size:15px}
+.fx-side{font-size:11px;font-weight:800;border-radius:5px;padding:2px 6px;margin-right:6px}
+.fx-side.long{background:rgba(22,163,74,.12);color:#16a34a}
+.fx-side.short{background:rgba(225,29,72,.12);color:#e11d48}
+.fx-status{font-size:11px;border-radius:999px;padding:2px 8px;background:rgba(0,0,0,.06);color:#4b5563}
+.fx-status.s-triggered{background:rgba(22,163,74,.12);color:#16a34a}
+.fx-status.s-invalidated{background:rgba(225,29,72,.1);color:#e11d48}
+.fx-levels{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:7px}
+.fx-levels span{font-size:11px;background:rgba(0,0,0,.05);border-radius:6px;padding:3px 7px;font-variant-numeric:tabular-nums}
+.fx-owner{margin-top:9px;gap:8px}
+
+/* реакции */
+.fx-reactions{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px;align-items:center}
+.fx-react{border:1px solid rgba(0,0,0,.1);background:#fff;border-radius:999px;padding:3px 9px;font-size:12px;cursor:pointer}
+.fx-react.is-mine{background:rgba(136,101,30,.12);border-color:rgba(136,101,30,.4)}
+.fx-react-add{position:relative}
+.fx-picker{display:none;position:absolute;bottom:120%;left:0;z-index:20;background:#fff;border:1px solid rgba(0,0,0,.1);
+  border-radius:12px;padding:6px;box-shadow:0 12px 30px rgba(0,0,0,.14);width:210px;flex-wrap:wrap;gap:4px}
+.fx-react-add.is-open .fx-picker{display:flex}
+.fx-win-body{display:flex;flex-direction:column;gap:6px}
+.fx-win-chip{display:inline-flex;align-items:center;gap:6px;background:rgba(0,0,0,.04);border-radius:9px;padding:5px 9px;font-size:12px;width:fit-content}
+
+/* чат */
+.fx-chat-log{display:flex;flex-direction:column;gap:9px;max-height:460px;overflow:auto;padding:6px 4px}
+.fx-msg{border:1px solid rgba(0,0,0,.07);border-radius:12px;padding:9px 11px;background:#fff;max-width:80%}
+.fx-msg.is-me{align-self:flex-end;background:rgba(136,101,30,.07);border-color:rgba(136,101,30,.25)}
+.fx-msg-head{display:flex;gap:9px;align-items:baseline}
+.fx-msg p{margin:3px 0 0;font-size:14px;word-break:break-word}
+.fx-chat-form{margin-top:12px;display:flex;flex-direction:column;gap:8px}
+.fx-chat-form .row{display:flex;gap:8px}
+.fx-chat-form input#chatText{flex:1}
+
+/* калькулятор */
+.fx-calc{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:18px;align-items:start}
+@media(max-width:900px){.fx-calc{grid-template-columns:1fr}}
+.fx-two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fx-row{display:flex;justify-content:space-between;gap:14px;padding:9px 0;border-bottom:1px solid rgba(0,0,0,.06)}
+.fx-row:last-of-type{border-bottom:0}
+.fx-row>div{text-align:right}
+.fx-row strong{display:block;font-size:16px}
+.fx-row small{color:#9ca3af;font-size:11px}
+
+.fx-dialog{border:0;border-radius:16px;padding:20px;width:min(560px,92vw);box-shadow:0 30px 70px rgba(0,0,0,.25)}
+.fx-dialog::backdrop{background:rgba(15,23,42,.45)}
+.fx-dialog label{display:block;margin-bottom:9px;font-size:13px}
+.fx-dialog input,.fx-dialog select,.fx-dialog textarea{width:100%}
+.fx-dialog .row{display:flex;gap:9px;justify-content:flex-end;margin-top:8px}
