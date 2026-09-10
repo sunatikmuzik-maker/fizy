@@ -20,6 +20,8 @@ async function api(path, method = 'GET', body) {
   let data = {};
   try { data = await r.json() } catch {}
   if (!r.ok) throw Object.assign(Error(data.error || 'Не удалось выполнить запрос.'), {status: r.status});
+  // после любой записи браузерный кэш устарел — сбрасываем, чтобы не показать старое
+  if (method !== 'GET') { try { ['posts', 'news', 'calendar'].forEach(k => localStorage.removeItem('fx.cache.' + k)) } catch {} }
   return data;
 }
 const ago = ts => {
@@ -234,7 +236,8 @@ function ensureOurTabs() {
 function onOpen(view) {
   if (view === 'marketView') { loadNews(); loadCalendar(); refreshGhost(); loadPosts() }
   if (view === 'ideasView') loadPosts();
-  if (view === 'chatView') { loadChat(); chatTimer ??= setInterval(loadChat, 15000) }
+  if (view === 'chatView') { loadChat(); startChatPoll() }
+  if (view !== 'chatView') stopChatPoll();
   if (view === 'calcView') runCalc();
 }
 
@@ -351,9 +354,30 @@ function renderNews() {
       </div>
     </article>`).join('');
 }
-async function loadNews() {
+/* ============================================================
+   ЭКОНОМИЯ ВЫЗОВОВ (бесплатный тариф хостинга)
+   Любой запрос к /api/* — это вызов serverless-функции, который тратит
+   квоту. Поэтому новости/календарь/идеи кэшируются в браузере, а чат
+   опрашивается реже и только пока вкладка активна.
+   ============================================================ */
+function cacheGet(key, ttl) {
   try {
-    const data = await api('news');
+    const raw = localStorage.getItem('fx.cache.' + key);
+    if (!raw) return null;
+    const box = JSON.parse(raw);
+    if (!box || Date.now() - box.t > ttl) return null;
+    return box.v;
+  } catch { return null }
+}
+function cacheSet(key, value) {
+  try { localStorage.setItem('fx.cache.' + key, JSON.stringify({t: Date.now(), v: value})) } catch {}
+}
+
+async function loadNews(force = false) {
+  try {
+    const hit = force ? null : cacheGet('news', 900000);
+    const data = hit || await api('news');
+    if (!hit) cacheSet('news', data);
     newsItems = data.items || [];
     $('#newsUpdated').textContent = data.updated ? 'Обновлено ' + ago(data.updated) : '';
     renderNews();
@@ -439,9 +463,11 @@ let posts = [], emojiSet = ['🔥', '💀', '❤️', '😂', '📈', '👏', '�
 const STATUS_LABEL = {watching: 'Наблюдаю', triggered: 'Отработала', invalidated: 'Отменена', archived: 'Архив'};
 let ideaFilter = 'all', ideaQuery = '';
 
-async function loadPosts() {
+async function loadPosts(force = false) {
   try {
-    const data = await api('posts');
+    const hit = force ? null : cacheGet('posts', 60000);
+    const data = hit || await api('posts');
+    if (!hit) cacheSet('posts', data);
     posts = data.posts || [];
     me = data.me || me;
     if (data.emoji?.length) emojiSet = data.emoji;
@@ -591,8 +617,20 @@ function renderChat(messages) {
     </div>`).join('') || '<p class="muted small">Сообщений пока нет.</p>';
   if (atBottom) log.scrollTop = log.scrollHeight;
 }
+function startChatPoll() {
+  stopChatPoll();
+  // раз в 60 с вместо 15 с: меньше вызовов функции в четыре раза
+  chatTimer = setInterval(() => { if (!document.hidden) loadChat() }, 60000);
+}
+function stopChatPoll() { if (chatTimer) { clearInterval(chatTimer); chatTimer = null } }
+document.addEventListener('visibilitychange', () => {
+  // в фоновой вкладке не опрашиваем сервер совсем
+  if (document.hidden) stopChatPoll();
+  else if (!$('#chatView')?.hidden) { loadChat(); startChatPoll() }
+});
+
 async function loadChat() {
-  if ($('#chatView')?.hidden) return;
+  if ($('#chatView')?.hidden || document.hidden) return;
   try { const d = await api('chat'); me = d.me || me; renderChat(d.messages || []) }
   catch (e) { const l = $('#chatLog'); if (l && !l.children.length) l.innerHTML = `<p class="error">${esc(e.message)}</p>` }
 }
@@ -670,7 +708,7 @@ function runCalc() {
    ============================================================ */
 function wire() {
   $('#tzToggle').onclick = () => { showLocal = !showLocal; renderSessions() };
-  $('#newsRefresh').onclick = loadNews;
+  $('#newsRefresh').onclick = () => loadNews(true);
   $('#newIdea').onclick = () => openPostDialog('idea');
   $('#shareWin').onclick = () => openPostDialog('win');
   $('#ideaSearch').oninput = e => { ideaQuery = e.target.value; renderIdeas() };
@@ -771,11 +809,13 @@ function renderCalendar() {
   }).join('');
 }
 
-async function loadCalendar() {
+async function loadCalendar(force = false) {
   const box = $('#calList');
   if (!box) return;
   try {
-    const d = await api('calendar');
+    const hit = force ? null : cacheGet('calendar', 1800000);
+    const d = hit || await api('calendar');
+    if (!hit) cacheSet('calendar', d);
     calEvents = d.events || [];
     renderCalFilters();
     renderCalendar();
@@ -823,7 +863,7 @@ const DICT = {
   '+ Новая идея': {uz: '+ Yangi gʻoya', en: '+ New idea', uk: '+ Нова ідея'},
   'Чат трейдеров': {uz: 'Treyderlar chati', en: 'Traders chat', uk: 'Чат трейдерів'},
   'Общая комната. Можно прикрепить карточку своей сделки.':
-    {uz: 'Umumiy xona. Bitim kartasini biriktirish mumkin.', en: 'Shared room. You can attach your trade card.', uk: 'Спільна кімната. Можна прикріпити картку угоди.'},
+    {uz: 'Umumiy xona. Bitim kartasini biriktirish mumkin.', en: 'Shared room. You can attach your trade card.', uk: '��пільна кімната. Можна прикріпити картку угоди.'},
   'Отправить': {uz: 'Yuborish', en: 'Send', uk: 'Надіслати'},
   'Онлайн': {uz: 'Onlayn', en: 'Online', uk: 'Онлайн'},
   'Калькулятор размера позиции': {uz: 'Pozitsiya hajmi kalkulyatori', en: 'Position size calculator', uk: 'Калькулятор розміру позиції'},

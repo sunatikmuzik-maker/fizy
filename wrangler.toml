@@ -1,0 +1,24 @@
+# FIZY Journal — конфигурация для Cloudflare Pages.
+name = "fizyjournal"
+compatibility_date = "2025-09-01"
+compatibility_flags = ["nodejs_compat"]
+pages_build_output_dir = "public"
+
+# KV-хранилища. id подставь свои после создания namespace в панели Cloudflare
+# (Storage & Databases → KV → Create namespace).
+[[kv_namespaces]]
+binding = "FIZY_KV"
+id = "ЗАМЕНИ_НА_ID_ОСНОВНОГО_KV"
+
+[[kv_namespaces]]
+binding = "FIZY_KV_RATE"
+id = "ЗАМЕНИ_НА_ID_KV_RATE"
+
+[[kv_namespaces]]
+binding = "FIZY_KV_COMMUNITY"
+id = "ЗАМЕНИ_НА_ID_KV_COMMUNITY"
+
+[vars]
+PUBLIC_URL = "https://fizyjournal.pages.dev"
+ALLOW_SIGNUP = "1"
+FIZY_STORE_NAME = "fizy-journal-v1"

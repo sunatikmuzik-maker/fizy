@@ -6,7 +6,8 @@ const scrypt=promisify(rawScrypt),sha=x=>createHash('sha256').update(x).digest('
 const fail=(status,message)=>{throw Object.assign(Error(message),{status})};
 const read=(store,key)=>store.getWithMetadata(key,{type:'json',consistency:'strong'});
 const salt=()=>randomBytes(16).toString('hex');
-const passwordHash=async(p,s)=>(await scrypt(p,s,64)).toString('hex');
+let kdf=async(p,s)=>(await scrypt(p,s,64)).toString('hex');
+const passwordHash=(p,s)=>kdf(p,s);
 const same=(a,b)=>typeof a==='string'&&typeof b==='string'&&a.length===b.length&&timingSafeEqual(Buffer.from(a),Buffer.from(b));
 const makeSession=()=>{const token=randomBytes(32).toString('hex');return{token,stored:{hash:sha(token),csrf:randomBytes(24).toString('hex'),expires:Date.now()+30*86400000}}};
 const cookie=(name,token,age=2592000)=>`__Host-fizy=${name}.${token}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${age}`;
@@ -16,7 +17,8 @@ function credentials(b){const name=String(b?.username||'').trim().toLowerCase(),
 async function cas(store,key,change){for(let i=0;i<5;i++){const prev=await read(store,key);const next=await change(prev?.data);const r=await store.setJSON(key,next,prev?{onlyIfMatch:prev.etag}:{onlyIfNew:true});if(r.modified)return next}fail(409,'Данные изменились в другом окне. Обнови журнал и повтори.');}
 async function limit(store,key,max){const now=Date.now();await cas(store,sha(key),old=>{const active=old&&old.until>now;if(active&&old.count>=max)fail(429,'Слишком много попыток. Подожди 10 минут.');return{until:active?old.until:now+600000,count:active?old.count+1:1}})}
 function active(record,token){if(!record||record.deleted)return null;return record.sessions?.find(s=>s.hash===sha(token)&&s.expires>Date.now())}
-export function createHandler({getStore,env=process.env}){
+export function createHandler({getStore,env=process.env,passwordHasher}){
+ if(passwordHasher)kdf=passwordHasher;
  const community=createCommunity({getStore,env});
  return async(req,context={})=>{
  try{

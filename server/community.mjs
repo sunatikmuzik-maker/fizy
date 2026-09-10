@@ -153,7 +153,7 @@ function parseCalendar(xml) {
 
 async function calendar(store) {
   const cached = await load(store, 'calendar/cache', null);
-  if (cached && now() - cached.updated < 900000) return {events: cached.events, updated: cached.updated, cached: true};
+  if (cached && now() - cached.updated < 1800000) return {events: cached.events, updated: cached.updated, cached: true};
   let events = [];
   for (const url of FF_URLS) {
     const xml = await fetchText(url);
@@ -193,7 +193,7 @@ async function fetchNews() {
 
 async function news(store) {
   const cached = await load(store, 'news/cache', null);
-  if (cached && now() - cached.updated < 300000) return {items: cached.items, updated: cached.updated, cached: true};
+  if (cached && now() - cached.updated < 1800000) return {items: cached.items, updated: cached.updated, cached: true};
   let items = [];
   try { items = await fetchNews() } catch { items = [] }
   if (!items.length && cached) return {items: cached.items, updated: cached.updated, cached: true, stale: true};
