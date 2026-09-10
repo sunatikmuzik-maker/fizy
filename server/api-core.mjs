@@ -8,8 +8,8 @@ const read=(store,key)=>store.getWithMetadata(key,{type:'json',consistency:'stro
 const salt=()=>randomBytes(16).toString('hex');
 const passwordHash=async(p,s)=>(await scrypt(p,s,64)).toString('hex');
 const same=(a,b)=>typeof a==='string'&&typeof b==='string'&&a.length===b.length&&timingSafeEqual(Buffer.from(a),Buffer.from(b));
-const makeSession=()=>{const token=randomBytes(32).toString('hex');return{token,stored:{hash:sha(token),csrf:randomBytes(24).toString('hex'),expires:Date.now()+7*86400000}}};
-const cookie=(name,token,age=604800)=>`__Host-fizy=${name}.${token}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=${age}`;
+const makeSession=()=>{const token=randomBytes(32).toString('hex');return{token,stored:{hash:sha(token),csrf:randomBytes(24).toString('hex'),expires:Date.now()+30*86400000}}};
+const cookie=(name,token,age=2592000)=>`__Host-fizy=${name}.${token}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${age}`;
 const json=(status,value,headers={})=>new Response(JSON.stringify(value),{status,headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff',...headers}});
 async function parse(req){if(!req.headers.get('content-type')?.startsWith('application/json'))fail(415,'Ожидается JSON.');if(Number(req.headers.get('content-length'))>2e6)fail(413,'Файл слишком большой.');const reader=req.body?.getReader();if(!reader)fail(400,'Нет данных.');const chunks=[];let length=0;for(;;){const {done,value}=await reader.read();if(done)break;length+=value.length;if(length>2e6){await reader.cancel();fail(413,'Данные превышают 2 МБ.')}chunks.push(value)}try{return JSON.parse(Buffer.concat(chunks).toString())}catch{fail(400,'Неверный JSON.')}}
 function credentials(b){const name=String(b?.username||'').trim().toLowerCase(),password=b?.password;if(!/^[a-z0-9_]{3,32}$/.test(name))fail(400,'Логин: 3–32 латинские буквы, цифры или _.');if(typeof password!=='string'||password.length<12||password.length>128)fail(400,'Пароль: от 12 до 128 символов.');return{name,password}}

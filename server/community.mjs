@@ -38,13 +38,30 @@ async function throttle(store, kind, username) {
    поэтому Content-Security-Policy сайта менять не нужно.
    ========================================================= */
 const FEEDS = [
-  {source: 'Reuters',   url: 'https://feeds.reuters.com/reuters/businessNews'},
-  {source: 'CNBC',      url: 'https://www.cnbc.com/id/20910258/device/rss/rss.html'},
-  {source: 'Investing', url: 'https://www.investing.com/rss/news_1.rss'},
-  {source: 'Investing', url: 'https://www.investing.com/rss/commodities_Gold.rss'},
-  {source: 'FXStreet',  url: 'https://www.fxstreet.com/rss/news'},
-  {source: 'Yahoo',     url: 'https://finance.yahoo.com/news/rssindex'}
+  // русскоязычные источники — идут первыми и получают приоритет в ленте
+  {source: 'Investing RU', lang: 'ru', url: 'https://ru.investing.com/rss/news_1.rss'},
+  {source: 'Investing RU', lang: 'ru', url: 'https://ru.investing.com/rss/commodities_Gold.rss'},
+  {source: 'Investing RU', lang: 'ru', url: 'https://ru.investing.com/rss/news_285.rss'},
+  {source: 'Interfax',     lang: 'ru', url: 'https://www.interfax.ru/rss.asp'},
+  {source: 'Финам',       lang: 'ru', url: 'https://www.finam.ru/analysis/conews/rsspoint/'},
+  {source: 'RT',           lang: 'ru', url: 'https://russian.rt.com/business/rss'},
+  // англоязычные
+  {source: 'Reuters',   lang: 'en', url: 'https://feeds.reuters.com/reuters/businessNews'},
+  {source: 'CNBC',      lang: 'en', url: 'https://www.cnbc.com/id/20910258/device/rss/rss.html'},
+  {source: 'Investing', lang: 'en', url: 'https://www.investing.com/rss/news_1.rss'},
+  {source: 'Investing', lang: 'en', url: 'https://www.investing.com/rss/commodities_Gold.rss'},
+  {source: 'FXStreet',  lang: 'en', url: 'https://www.fxstreet.com/rss/news'},
+  {source: 'Yahoo',     lang: 'en', url: 'https://finance.yahoo.com/news/rssindex'}
 ];
+
+// Календарь Forex Factory (неделя). Отдаётся отдельным маршрутом /api/calendar.
+const FF_URLS = [
+  'https://nfs.faireconomy.media/ff_calendar_thisweek.xml',
+  'https://cdn-nfs.faireconomy.media/ff_calendar_thisweek.xml'
+];
+const FF_TITLES = {
+  ru: {high: 'Высокая', medium: 'Средняя', low: 'Низкая', holiday: 'Выходной'}
+};
 
 // ключевые слова -> тег и «вес» важности
 const TAGS = [
@@ -96,6 +113,58 @@ function parseFeed(xml, source) {
   return items;
 }
 
+// общий загрузчик с тайм-аутом
+async function fetchText(url, ms = 7000) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), ms);
+  try {
+    const r = await fetch(url, {signal: ctrl.signal, headers: {'User-Agent': 'FIZY-Journal/1.0 (+news reader)'}});
+    if (!r.ok) return null;
+    return await r.text();
+  } catch { return null } finally { clearTimeout(timer) }
+}
+
+// ---------- экономический календарь Forex Factory ----------
+function parseCalendar(xml) {
+  const out = [];
+  const blocks = xml.match(/<event>[\s\S]*?<\/event>/gi) || [];
+  for (const b of blocks) {
+    const title = field(b, 'title');
+    if (!title) continue;
+    const country = field(b, 'country');
+    const impact = field(b, 'impact').toLowerCase();
+    const dateRaw = field(b, 'date'), timeRaw = field(b, 'time');
+    let ts = Date.parse(dateRaw + ' ' + timeRaw);
+    if (!Number.isFinite(ts)) ts = Date.parse(dateRaw);
+    out.push({
+      id: (country + title + dateRaw + timeRaw).slice(0, 90),
+      title: title.slice(0, 160),
+      country: country.slice(0, 8),
+      impact: impact.includes('high') ? 'high' : impact.includes('medium') ? 'medium' : impact.includes('holiday') ? 'holiday' : 'low',
+      time: Number.isFinite(ts) ? ts : null,
+      allDay: !/\d/.test(timeRaw),
+      forecast: clean(field(b, 'forecast'), 24),
+      previous: clean(field(b, 'previous'), 24),
+      actual: clean(field(b, 'actual'), 24)
+    });
+  }
+  return out.sort((a, b) => (a.time || 0) - (b.time || 0));
+}
+
+async function calendar(store) {
+  const cached = await load(store, 'calendar/cache', null);
+  if (cached && now() - cached.updated < 900000) return {events: cached.events, updated: cached.updated, cached: true};
+  let events = [];
+  for (const url of FF_URLS) {
+    const xml = await fetchText(url);
+    if (xml) { events = parseCalendar(xml); if (events.length) break }
+  }
+  if (!events.length && cached) return {events: cached.events, updated: cached.updated, stale: true};
+  const payload = {events: events.slice(0, 120), updated: now(), labels: FF_TITLES.ru};
+  try { await store.setJSON('calendar/cache', payload) } catch {}
+  return payload;
+}
+
 async function fetchNews() {
   const results = await Promise.allSettled(FEEDS.map(async f => {
     const ctrl = new AbortController();
@@ -103,7 +172,7 @@ async function fetchNews() {
     try {
       const r = await fetch(f.url, {signal: ctrl.signal, headers: {'User-Agent': 'FIZY-Journal/1.0 (+news reader)'}});
       if (!r.ok) return [];
-      return parseFeed(await r.text(), f.source);
+      return parseFeed(await r.text(), f.source).map(i => ({...i, lang: f.lang || 'en'}));
     } finally { clearTimeout(timer) }
   }));
   const seen = new Set(), all = [];
@@ -242,6 +311,7 @@ export function createCommunity({getStore, env = process.env}) {
     const s = store();
 
     if (path === '/api/news' && method === 'GET') return json(200, await news(s));
+    if (path === '/api/calendar' && method === 'GET') return json(200, await calendar(s));
 
     if (path === '/api/chat' && method === 'GET') {
       const data = await load(s, CHAT_KEY, {messages: []});
