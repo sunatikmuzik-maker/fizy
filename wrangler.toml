@@ -1,24 +1,31 @@
-# FIZY Journal — конфигурация для Cloudflare Pages.
-name = "fizyjournal"
+# FIZY Journal — конфигурация для Cloudflare Workers (статика + API).
+name = "fizy"
+main = "worker.mjs"
 compatibility_date = "2025-09-01"
 compatibility_flags = ["nodejs_compat"]
-pages_build_output_dir = "public"
 
-# KV-хранилища. id подставь свои после создания namespace в панели Cloudflare
-# (Storage & Databases → KV → Create namespace).
+[assets]
+directory = "./public"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+
+[vars]
+PUBLIC_URL = "https://fizy.sunatikmuzik.workers.dev"
+ALLOW_SIGNUP = "1"
+FIZY_STORE_NAME = "fizy-journal-v1"
+
+# KV-хранилища. Создай три namespace в панели (Storage & databases → KV)
+# и вставь их id сюда вместо заглушек.
 [[kv_namespaces]]
 binding = "FIZY_KV"
-id = "ЗАМЕНИ_НА_ID_ОСНОВНОГО_KV"
+id = "2c6573dcf6ca404a83d21048993b0543
+"
 
 [[kv_namespaces]]
 binding = "FIZY_KV_RATE"
-id = "ЗАМЕНИ_НА_ID_KV_RATE"
+id = "7dbcabcf7300420d9e934a9fdb8f44aa"
 
 [[kv_namespaces]]
 binding = "FIZY_KV_COMMUNITY"
-id = "ЗАМЕНИ_НА_ID_KV_COMMUNITY"
-
-[vars]
-PUBLIC_URL = "https://fizyjournal.pages.dev"
-ALLOW_SIGNUP = "1"
-FIZY_STORE_NAME = "fizy-journal-v1"
+id = "47a7d2c1d74c43f7bb54b1d9422bffe4
+"
