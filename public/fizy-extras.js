@@ -61,6 +61,15 @@ const MARKUP = `
     </div>
   </div>
 
+  <div class="panel fx-calendar">
+    <div class="section-head">
+      <div><h2>Календарь Forex Factory</h2>
+      <p class="muted small">События недели в твоём часовом поясе. Красные — высокая важность.</p></div>
+      <div class="fx-filters" id="calFilters"></div>
+    </div>
+    <div id="calList" class="fx-cal"><p class="muted small">Загружаю календарь…</p></div>
+  </div>
+
   <div class="panel fx-ghost">
     <div class="section-head"><h2>Призрачный Счёт</h2></div>
     <div class="fx-ghost-body">
@@ -168,6 +177,11 @@ function mount() {
 
   const nav = $('.workspace-tabs');
   if (!nav) return;
+
+  dropOldCalcTab();
+  // сайт может перерисовать панель вкладок после входа — следим и чистим снова
+  new MutationObserver(() => { dropOldCalcTab(); ensureOurTabs() }).observe(nav, {childList: true});
+
   TABS.forEach(t => {
     const b = el('button', 'fx-tab', esc(t.label));
     b.dataset.view = t.view;
@@ -189,8 +203,36 @@ function mount() {
   });
 }
 
+// Убирает старую вкладку «Калькулятор» сайта, чтобы кнопка осталась одна.
+function dropOldCalcTab() {
+  const nav = $('.workspace-tabs');
+  if (!nav) return;
+  [...nav.querySelectorAll('button, a')].forEach(b => {
+    if (b.classList.contains('fx-tab')) return;
+    const label = (b.textContent || '').trim().toLowerCase();
+    if (!/^(калькулятор|kalkulyator|calculator|калькулятор)$/.test(label)) return;
+    const view = b.dataset.view;
+    if (view) { const s = $('#' + view); if (s) { s.hidden = true; s.dataset.fxRetired = '1' } }
+    b.remove();
+  });
+  // если старый раздел всё равно показался — прячем
+  document.querySelectorAll('.app-view[data-fx-retired]').forEach(s => { s.hidden = true });
+}
+
+// Возвращает наши вкладки, если сайт пересобрал панель.
+function ensureOurTabs() {
+  const nav = $('.workspace-tabs');
+  if (!nav) return;
+  TABS.forEach(t => {
+    if (nav.querySelector(`button.fx-tab[data-view="${t.view}"]`)) return;
+    const b = el('button', 'fx-tab', esc(T(t.label)));
+    b.dataset.view = t.view;
+    nav.append(b);
+  });
+}
+
 function onOpen(view) {
-  if (view === 'marketView') { loadNews(); refreshGhost(); loadPosts() }
+  if (view === 'marketView') { loadNews(); loadCalendar(); refreshGhost(); loadPosts() }
   if (view === 'ideasView') loadPosts();
   if (view === 'chatView') { loadChat(); chatTimer ??= setInterval(loadChat, 15000) }
   if (view === 'calcView') runCalc();
@@ -274,7 +316,7 @@ function renderSessions() {
   });
   const overlap = SESSIONS.filter(s => sessionState(s, date).open).map(s => s.name);
   if (overlap.length > 1) {
-    const tip = el('div', 'fx-overlap', `Сейчас пересекаются: <b>${overlap.map(esc).join(' + ')}</b> — лучшая ликвидность дня.`);
+    const tip = el('div', 'fx-overlap', `Сейчас пересе��аются: <b>${overlap.map(esc).join(' + ')}</b> — лучшая ликвидность дня.`);
     cards.append(tip);
   }
 }
@@ -690,6 +732,197 @@ function wire() {
   };
 }
 
+/* ============================================================
+   КАЛЕНДАРЬ FOREX FACTORY
+   ============================================================ */
+const IMPACT = {high: {ru: 'Высокая', cls: 'i-high'}, medium: {ru: 'Средняя', cls: 'i-med'},
+  low: {ru: 'Низкая', cls: 'i-low'}, holiday: {ru: 'Выходной', cls: 'i-hol'}};
+let calEvents = [], calFilter = 'today';
+const CAL_FILTERS = [{id: 'today', label: 'Сегодня'}, {id: 'high', label: 'Только важные'}, {id: 'week', label: 'Вся неделя'}];
+
+function renderCalFilters() {
+  const box = $('#calFilters');
+  if (!box) return;
+  box.innerHTML = '';
+  CAL_FILTERS.forEach(f => {
+    const b = el('button', 'fx-chip' + (f.id === calFilter ? ' is-active' : ''), esc(T(f.label)));
+    b.onclick = () => { calFilter = f.id; renderCalFilters(); renderCalendar() };
+    box.append(b);
+  });
+}
+
+function renderCalendar() {
+  const box = $('#calList');
+  if (!box) return;
+  const today = new Date().toDateString();
+  let items = calEvents;
+  if (calFilter === 'today') items = items.filter(e => e.time && new Date(e.time).toDateString() === today);
+  if (calFilter === 'high') items = items.filter(e => e.impact === 'high');
+  if (!items.length) { box.innerHTML = `<p class="muted small">${esc(T('Нет событий по этому фильтру.'))}</p>`; return }
+  box.innerHTML = items.slice(0, 40).map(e => {
+    const t = e.time ? new Intl.DateTimeFormat('ru-RU', {weekday: 'short', hour: '2-digit', minute: '2-digit', hour12: false}).format(new Date(e.time)) : '—';
+    const im = IMPACT[e.impact] || IMPACT.low;
+    return `<div class="fx-cal-row ${im.cls}">
+      <span class="fx-cal-time">${esc(t)}</span>
+      <span class="fx-cal-cur">${esc(e.country)}</span>
+      <span class="fx-cal-title">${esc(e.title)}</span>
+      <span class="fx-cal-nums">${e.actual ? `<b>${esc(e.actual)}</b>` : ''}${e.forecast ? `<i>прогноз ${esc(e.forecast)}</i>` : ''}${e.previous ? `<i>было ${esc(e.previous)}</i>` : ''}</span>
+    </div>`;
+  }).join('');
+}
+
+async function loadCalendar() {
+  const box = $('#calList');
+  if (!box) return;
+  try {
+    const d = await api('calendar');
+    calEvents = d.events || [];
+    renderCalFilters();
+    renderCalendar();
+  } catch (e) { box.innerHTML = `<p class="error">${esc(e.message)}</p>` }
+}
+
+/* ============================================================
+   ЯЗЫКИ: РУ / УЗБ / АНГЛ / УКР
+   Перевод работает по словарю русских надписей: меняются
+   только те тексты, которые совпали целиком — данные пользователя не трогаем.
+   ============================================================ */
+const LANGS = [{id: 'ru', label: 'РУ'}, {id: 'uz', label: 'UZB'}, {id: 'en', label: 'ENG'}, {id: 'uk', label: 'УКР'}];
+const DICT = {
+  'Обзор': {uz: 'Umumiy', en: 'Overview', uk: 'Огляд'},
+  'Сделки': {uz: 'Bitimlar', en: 'Trades', uk: 'Угоди'},
+  'Калькулятор': {uz: 'Kalkulyator', en: 'Calculator', uk: 'Калькулятор'},
+  'ИИ-помощник': {uz: 'AI yordamchi', en: 'AI assistant', uk: 'ШІ-помічник'},
+  'Аккаунт': {uz: 'Hisob', en: 'Account', uk: 'Акаунт'},
+  'Рынок': {uz: 'Bozor', en: 'Market', uk: 'Ринок'},
+  'Идеи': {uz: 'Gʻoyalar', en: 'Ideas', uk: 'Ідеї'},
+  'Чат': {uz: 'Chat', en: 'Chat', uk: 'Чат'},
+  'Выйти': {uz: 'Chiqish', en: 'Log out', uk: 'Вийти'},
+  '+ Новая сделка': {uz: '+ Yangi bitim', en: '+ New trade', uk: '+ Нова угода'},
+  'Геополитика и рынок': {uz: 'Geosiyosat va bozor', en: 'Geopolitics & markets', uk: 'Геополітика і ринок'},
+  'Металлы, валюты, индексы и события, которые их двигают.':
+    {uz: 'Metall, valyuta, indekslar va ularni harakatga soluvchi voqealar.', en: 'Metals, currencies, indices and the events that move them.', uk: 'Метали, валюти, індекси та події, які їх рухають.'},
+  'Прямой эфир': {uz: 'Jonli efir', en: 'Live', uk: 'Прямий ефір'},
+  'Обновить': {uz: 'Yangilash', en: 'Refresh', uk: 'Оновити'},
+  'Время работы рынка': {uz: 'Bozor ish vaqti', en: 'Market hours', uk: 'Час роботи ринку'},
+  'Ваше время': {uz: 'Sizning vaqt', en: 'Your time', uk: 'Ваш час'},
+  'Календарь Forex Factory': {uz: 'Forex Factory taqvimi', en: 'Forex Factory calendar', uk: 'Календар Forex Factory'},
+  'События недели в твоём часовом поясе. Красные — высокая важность.':
+    {uz: 'Haftalik voqealar sizning vaqt mintaqangizda. Qizil — yuqori ahamiyat.', en: 'This week\u2019s events in your timezone. Red means high impact.', uk: 'Події тижня у твоєму часовому поясі. Червоні — висока важливість.'},
+  'Сегодня': {uz: 'Bugun', en: 'Today', uk: 'Сьогодні'},
+  'Только важные': {uz: 'Faqat muhim', en: 'High impact', uk: 'Лише важливі'},
+  'Вся неделя': {uz: 'Butun hafta', en: 'Whole week', uk: 'Увесь тиждень'},
+  'Призрачный Счёт': {uz: 'Sharpa reyting', en: 'Ghost Score', uk: 'Привидний Рахунок'},
+  'Консистенция': {uz: 'Barqarorlik', en: 'Consistency', uk: 'Консистентність'},
+  'Риск дисциплины': {uz: 'Risk intizomi', en: 'Risk discipline', uk: 'Ризик-дисципліна'},
+  'Соотношение риска и прибыли': {uz: 'Risk/foyda nisbati', en: 'Risk / reward', uk: 'Співвідношення ризику та прибутку'},
+  'Коэффициент выигрыша': {uz: 'Yutuq koeffitsienti', en: 'Win rate', uk: 'Коефіцієнт виграшу'},
+  'Поделиться результатом': {uz: 'Natijani ulashish', en: 'Share result', uk: 'Поділитися результатом'},
+  'Что трейдеры закрыли сегодня.': {uz: 'Treyderlar bugun nimani yopdi.', en: 'What traders closed today.', uk: 'Що трейдери закрили сьогодні.'},
+  'Идеи трейдеров.': {uz: 'Treyderlar gʻoyalari.', en: 'Trader ideas.', uk: 'Ідеї трейдерів.'},
+  '+ Новая идея': {uz: '+ Yangi gʻoya', en: '+ New idea', uk: '+ Нова ідея'},
+  'Чат трейдеров': {uz: 'Treyderlar chati', en: 'Traders chat', uk: 'Чат трейдерів'},
+  'Общая комната. Можно прикрепить карточку своей сделки.':
+    {uz: 'Umumiy xona. Bitim kartasini biriktirish mumkin.', en: 'Shared room. You can attach your trade card.', uk: 'Спільна кімната. Можна прикріпити картку угоди.'},
+  'Отправить': {uz: 'Yuborish', en: 'Send', uk: 'Надіслати'},
+  'Онлайн': {uz: 'Onlayn', en: 'Online', uk: 'Онлайн'},
+  'Калькулятор размера позиции': {uz: 'Pozitsiya hajmi kalkulyatori', en: 'Position size calculator', uk: 'Калькулятор розміру позиції'},
+  'Вычислить': {uz: 'Hisoblash', en: 'Calculate', uk: 'Обчислити'},
+  'Сбросить': {uz: 'Tozalash', en: 'Reset', uk: 'Скинути'},
+  'Нет событий по этому фильтру.': {uz: 'Bu filtr boʻyicha voqea yoʻq.', en: 'No events for this filter.', uk: 'Немає подій за цим фільтром.'},
+  'Язык': {uz: 'Til', en: 'Language', uk: 'Мова'}
+};
+let lang = localStorage.getItem('fizy-lang') || 'ru';
+const T = s => (lang === 'ru' ? s : (DICT[s]?.[lang] || s));
+
+function applyLang() {
+  document.documentElement.lang = lang;
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  const nodes = [];
+  while (walker.nextNode()) nodes.push(walker.currentNode);
+  nodes.forEach(n => {
+    const parent = n.parentElement;
+    if (!parent || parent.closest('#newsList, #chatLog, #ideaList, #winFeed, #calList, script, style')) return;
+    const raw = (n.fxSource ??= n.nodeValue);
+    const key = raw.trim();
+    if (!key || !DICT[key]) return;
+    const value = lang === 'ru' ? key : DICT[key][lang] || key;
+    n.nodeValue = raw.replace(key, value);
+  });
+  document.querySelectorAll('[placeholder]').forEach(i => {
+    const raw = (i.dataset.fxPh ??= i.placeholder);
+    i.placeholder = lang === 'ru' ? raw : (DICT[raw]?.[lang] || raw);
+  });
+  renderCalFilters();
+  renderNewsFilters();
+}
+
+function langPicker(compact) {
+  const box = el('div', 'fx-lang' + (compact ? ' is-compact' : ''));
+  LANGS.forEach(l => {
+    const b = el('button', 'fx-lang-btn' + (l.id === lang ? ' is-active' : ''), esc(l.label));
+    b.type = 'button';
+    b.onclick = () => {
+      lang = l.id;
+      localStorage.setItem('fizy-lang', lang);
+      document.querySelectorAll('.fx-lang-btn').forEach(x => x.classList.toggle('is-active', x.textContent === l.label));
+      applyLang();
+    };
+    box.append(b);
+  });
+  return box;
+}
+
+/* ============================================================
+   ШАПКА И АККАУНТ: переключатель языка и круглый аватар
+   ============================================================ */
+const initials = name => String(name || '?').replace(/[^\p{L}\p{N}]/gu, '').slice(0, 2).toUpperCase();
+const avatarColor = name => {
+  let h = 0;
+  for (const ch of String(name || 'fizy')) h = (h * 31 + ch.codePointAt(0)) % 360;
+  return `hsl(${h} 55% 42%)`;
+};
+
+function injectHeader() {
+  const actions = document.querySelector('.header-actions');
+  if (!actions || actions.querySelector('.fx-lang')) return;
+  actions.prepend(langPicker(true));
+}
+
+function injectAccountCard() {
+  const view = $('#accountView') || document.querySelector('[id*="account" i].app-view');
+  if (!view || view.querySelector('.fx-profile')) return;
+  const card = el('div', 'panel fx-profile');
+  card.innerHTML = `
+    <div class="fx-avatar" id="fxAvatar"></div>
+    <div class="fx-profile-body">
+      <h2 id="fxProfileName">—</h2>
+      <p class="muted small" id="fxProfileMeta">Личный кабинет трейдера</p>
+      <div class="fx-profile-stats" id="fxProfileStats"></div>
+      <div class="fx-profile-lang"><span class="small muted">Язык</span></div>
+    </div>`;
+  view.prepend(card);
+  card.querySelector('.fx-profile-lang').append(langPicker(false));
+  refreshProfile();
+}
+
+function refreshProfile() {
+  const av = $('#fxAvatar');
+  if (!av) return;
+  const name = me || document.querySelector('#username')?.textContent?.trim() || 'Трейдер';
+  av.textContent = initials(name);
+  av.style.background = avatarColor(name);
+  $('#fxProfileName').textContent = name;
+  const trades = journalCache?.trades ?? [];
+  const wins = trades.filter(t => (t.pnl ?? t.rr ?? 0) > 0).length;
+  const stats = [
+    ['Сделок', trades.length],
+    ['Плюсовых', wins],
+    ['Винрейт', trades.length ? Math.round(wins / trades.length * 100) + '%' : '—']
+  ];
+  $('#fxProfileStats').innerHTML = stats.map(([k, v]) => `<div><span>${esc(k)}</span><strong>${esc(String(v))}</strong></div>`).join('');
+}
+
 async function boot() {
   mount();
   if (!$('#marketView')) return;
@@ -697,9 +930,14 @@ async function boot() {
   wire();
   renderSessions();
   setInterval(renderSessions, 30000);
+  renderCalFilters();
   runCalc();
+  injectHeader();
+  injectAccountCard();
+  applyLang();
+  setInterval(dropOldCalcTab, 1500);
   try { const m = await api('me'); me = m.user?.username; csrf = m.csrf } catch {}
-  if (me) { loadNews(); loadPosts(); refreshGhost() }
+  if (me) { loadNews(); loadCalendar(); loadPosts(); refreshGhost(); refreshProfile() }
 }
 
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
@@ -709,6 +947,10 @@ else boot();
 new MutationObserver(async () => {
   const ws = $('#workspace');
   if (ws && !ws.hidden && !me) {
-    try { const m = await api('me'); me = m.user?.username; csrf = m.csrf; loadNews(); loadPosts(); refreshGhost() } catch {}
+    try {
+      const m = await api('me'); me = m.user?.username; csrf = m.csrf;
+      injectHeader(); injectAccountCard(); applyLang(); dropOldCalcTab();
+      loadNews(); loadCalendar(); loadPosts(); refreshGhost(); refreshProfile();
+    } catch {}
   }
 }).observe(document.documentElement, {attributes: true, subtree: true, attributeFilter: ['hidden']});

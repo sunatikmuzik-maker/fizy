@@ -110,3 +110,92 @@
 .fx-dialog label{display:block;margin-bottom:9px;font-size:13px}
 .fx-dialog input,.fx-dialog select,.fx-dialog textarea{width:100%}
 .fx-dialog .row{display:flex;gap:9px;justify-content:flex-end;margin-top:8px}
+
+/* =========================================================
+   ОФОРМЛЕНИЕ v2: наведение, карта, календарь, языки, аватар
+   ========================================================= */
+
+/* --- реакция на наведение --- */
+.fx-view .panel,
+.fx-card,.fx-win,.fx-session,.fx-news-item,.fx-stat,.fx-factor,.fx-msg{
+  transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease,background .18s ease}
+.fx-view .panel:hover{box-shadow:0 14px 34px rgba(15,23,42,.10);border-color:rgba(136,101,30,.28)}
+.fx-card:hover,.fx-win:hover,.fx-stat:hover,.fx-factor:hover{transform:translateY(-2px);box-shadow:0 12px 26px rgba(15,23,42,.12);border-color:rgba(136,101,30,.4)}
+.fx-news-item:hover{background:rgba(136,101,30,.06);transform:translateX(2px)}
+.fx-news-item.is-hot:hover{background:rgba(225,29,72,.09)}
+.fx-session:hover{transform:translateY(-2px);box-shadow:0 10px 22px rgba(15,23,42,.12)}
+.fx-msg:hover{border-color:rgba(136,101,30,.35)}
+.fx-chip:hover,.fx-react:hover,.fx-lang-btn:hover{background:rgba(136,101,30,.12);border-color:rgba(136,101,30,.45);transform:translateY(-1px)}
+.workspace-tabs button:hover{color:#88651e}
+.fx-view button{transition:transform .15s ease,box-shadow .15s ease,background .15s ease,color .15s ease}
+.fx-view button:hover{transform:translateY(-1px)}
+.fx-view button.primary:hover{box-shadow:0 8px 20px rgba(136,101,30,.35)}
+.fx-view a:hover{text-decoration:underline}
+
+/* --- трейдерский вид блоков --- */
+.fx-view .panel{position:relative;overflow:hidden}
+.fx-view .panel::before{content:"";position:absolute;inset:0 0 auto 0;height:3px;
+  background:linear-gradient(90deg,#88651e,#d4af37 45%,transparent)}
+.fx-view h2{letter-spacing:-.01em}
+.fx-view .section-head{align-items:flex-start}
+.fx-ghost-total strong,.fx-stat strong,.fx-row strong,.fx-session-clock,.fx-cal-time{font-variant-numeric:tabular-nums}
+.fx-ghost{background:
+  radial-gradient(120% 140% at 100% 0,rgba(136,101,30,.10),transparent 55%),#fff}
+.fx-hero{background:
+  radial-gradient(90% 130% at 0 0,rgba(136,101,30,.12),transparent 60%),#fff}
+.fx-view .eyebrow{letter-spacing:.16em;font-size:11px;font-weight:800;color:#88651e}
+
+/* --- карта сессий --- */
+.fx-map{
+  height:210px;
+  background:
+    linear-gradient(180deg,rgba(136,101,30,.05),rgba(15,23,42,.04)),
+    radial-gradient(circle at 1px 1px,rgba(15,23,42,.16) 1px,transparent 0) 0 0/10px 10px;
+  border:1px solid rgba(15,23,42,.08);
+  box-shadow:inset 0 0 40px rgba(15,23,42,.06)}
+.fx-map::before{
+  content:"";position:absolute;inset:0;opacity:.5;pointer-events:none;
+  background:repeating-linear-gradient(90deg,transparent 0 59px,rgba(15,23,42,.06) 59px 60px),
+             repeating-linear-gradient(0deg,transparent 0 39px,rgba(15,23,42,.06) 39px 40px)}
+.fx-pin b{font-size:10px;letter-spacing:.02em;border:1px solid rgba(15,23,42,.08)}
+.fx-pin.is-open b{background:#111827;color:#fff;border-color:#111827}
+
+/* --- календарь Forex Factory --- */
+.fx-cal{display:flex;flex-direction:column;max-height:420px;overflow:auto}
+.fx-cal-row{display:grid;grid-template-columns:82px 46px minmax(0,1fr) auto;gap:10px;align-items:center;
+  padding:9px 11px;border-left:3px solid rgba(15,23,42,.12);border-radius:0 10px 10px 0;margin-bottom:6px;
+  background:rgba(15,23,42,.02);transition:background .15s ease,transform .15s ease}
+.fx-cal-row:hover{background:rgba(136,101,30,.08);transform:translateX(2px)}
+.fx-cal-row.i-high{border-left-color:#e11d48;background:rgba(225,29,72,.05)}
+.fx-cal-row.i-med{border-left-color:#f59e0b}
+.fx-cal-row.i-hol{border-left-color:#94a3b8;opacity:.75}
+.fx-cal-time{font-size:12px;color:#6b7280;font-weight:600}
+.fx-cal-cur{font-size:11px;font-weight:800;background:#111827;color:#fff;border-radius:6px;padding:2px 6px;text-align:center}
+.fx-cal-title{font-size:13px;font-weight:600}
+.fx-cal-nums{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}
+.fx-cal-nums b{font-size:12px;background:rgba(22,163,74,.14);color:#15803d;border-radius:6px;padding:2px 7px}
+.fx-cal-nums i{font-size:11px;color:#9ca3af;font-style:normal}
+@media(max-width:760px){.fx-cal-row{grid-template-columns:70px 40px 1fr}.fx-cal-nums{grid-column:1/-1;justify-content:flex-start}}
+
+/* --- переключатель языка --- */
+.fx-lang{display:inline-flex;gap:3px;background:rgba(15,23,42,.05);border-radius:999px;padding:3px}
+.fx-lang-btn{border:0;background:transparent;border-radius:999px;padding:4px 10px;font-size:11px;font-weight:800;
+  letter-spacing:.04em;cursor:pointer;color:#6b7280}
+.fx-lang-btn.is-active{background:#111827;color:#fff}
+.fx-lang.is-compact{margin-right:10px}
+
+/* --- карточка профиля в аккаунте --- */
+.fx-profile{display:flex;gap:18px;align-items:center;position:relative;overflow:hidden}
+.fx-profile::before{content:"";position:absolute;inset:0 0 auto 0;height:3px;background:linear-gradient(90deg,#88651e,#d4af37,transparent)}
+.fx-avatar{width:76px;height:76px;flex:0 0 76px;border-radius:50%;display:grid;place-items:center;
+  color:#fff;font-weight:800;font-size:26px;letter-spacing:.02em;box-shadow:0 10px 24px rgba(15,23,42,.18);
+  transition:transform .2s ease}
+.fx-profile:hover .fx-avatar{transform:scale(1.05) rotate(-3deg)}
+.fx-profile-body{flex:1;min-width:0}
+.fx-profile-body h2{margin:0 0 2px}
+.fx-profile-stats{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0}
+.fx-profile-stats div{border:1px solid rgba(0,0,0,.08);border-radius:10px;padding:7px 12px;min-width:88px}
+.fx-profile-stats span{display:block;font-size:10px;letter-spacing:.08em;color:#9ca3af;font-weight:700;text-transform:uppercase}
+.fx-profile-stats strong{font-size:19px;font-variant-numeric:tabular-nums}
+.fx-profile-lang{display:flex;align-items:center;gap:10px}
+@media(max-width:620px){.fx-profile{flex-direction:column;align-items:flex-start}}
