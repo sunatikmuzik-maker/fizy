@@ -302,6 +302,68 @@ async function postsDelete(store, username, body) {
 }
 
 /* =========================================================
+   АВТОПЕРЕВОД НОВОСТЕЙ
+   Бесплатный публичный эндпоинт Google Translate.
+   Результат кладём в хранилище на сутки, чтобы одна и та же
+   новость не переводилась для каждого посетителя заново.
+   ========================================================= */
+const TR_LANGS = new Set(['ru', 'en', 'uk', 'uz']);
+const TR_TTL = 86400000;
+const hashText = text => {
+  let h = 5381;
+  for (let i = 0; i < text.length; i++) h = ((h << 5) + h + text.charCodeAt(i)) | 0;
+  return (h >>> 0).toString(36);
+};
+
+async function translateOne(text, to) {
+  const url = 'https://translate.googleapis.com/translate_a/single?client=gtx&dt=t&sl=auto&tl='
+    + encodeURIComponent(to) + '&q=' + encodeURIComponent(text);
+  const raw = await fetchText(url, 8000);
+  if (!raw) return null;
+  let data;
+  try { data = JSON.parse(raw) } catch { return null }
+  if (!Array.isArray(data?.[0])) return null;
+  const out = data[0].map(part => part?.[0] ?? '').join('');
+  return out.trim() ? out : null;
+}
+
+async function translate(store, body) {
+  const to = TR_LANGS.has(body?.to) ? body.to : 'ru';
+  const texts = Array.isArray(body?.texts) ? body.texts.slice(0, 60).map(t => clean(t, 400)).filter(Boolean) : [];
+  if (!texts.length) return {to, items: {}};
+
+  const cacheKey = `translate/${to}`;
+  const cached = await load(store, cacheKey, {items: {}, at: 0});
+  const items = {}, missing = [];
+  for (const text of texts) {
+    const key = hashText(text);
+    const hit = cached.items?.[key];
+    if (hit && now() - (hit.at || 0) < TR_TTL) items[text] = hit.v;
+    else missing.push({text, key});
+  }
+
+  if (missing.length) {
+    const fresh = await Promise.all(missing.slice(0, 30).map(async m => {
+      try { return {...m, value: await translateOne(m.text, to)} } catch { return {...m, value: null} }
+    }));
+    const good = fresh.filter(f => f.value);
+    for (const f of good) items[f.text] = f.value;
+    if (good.length) {
+      try {
+        await cas(store, cacheKey, old => {
+          const box = {...(old?.items ?? {})};
+          for (const f of good) box[f.key] = {v: f.value, at: now()};
+          // не даём кешу разрастаться бесконечно
+          const entries = Object.entries(box).sort((a, b) => (b[1].at || 0) - (a[1].at || 0)).slice(0, 600);
+          return {items: Object.fromEntries(entries), at: now()};
+        }, {items: {}, at: 0});
+      } catch {}
+    }
+  }
+  return {to, items};
+}
+
+/* =========================================================
    Маршрутизатор расширений
    ========================================================= */
 export function createCommunity({getStore, env = process.env}) {
@@ -312,6 +374,7 @@ export function createCommunity({getStore, env = process.env}) {
 
     if (path === '/api/news' && method === 'GET') return json(200, await news(s));
     if (path === '/api/calendar' && method === 'GET') return json(200, await calendar(s));
+    if (path === '/api/translate' && method === 'POST') return json(200, await translate(s, await parse(req)));
 
     if (path === '/api/chat' && method === 'GET') {
       const data = await load(s, CHAT_KEY, {messages: []});

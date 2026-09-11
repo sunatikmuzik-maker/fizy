@@ -56,7 +56,7 @@ const MARKUP = `
       <div class="section-head">
         <div><h2>Время работы рынка</h2>
         <p class="muted small" id="sessionSub"></p></div>
-        <button id="tzToggle" class="fx-chip">Ваше время</button>
+        <div class="fx-tz-wrap" id="tzWrap"></div>
       </div>
       <div class="fx-map" id="sessionMap"></div>
       <div class="fx-session-grid" id="sessionCards"></div>
@@ -66,8 +66,8 @@ const MARKUP = `
   <div class="panel fx-calendar">
     <div class="section-head">
       <div><h2>Календарь Forex Factory</h2>
-      <p class="muted small">События недели в твоём часовом поясе. Красные — высокая важность.</p></div>
-      <div class="fx-filters" id="calFilters"></div>
+      <p class="muted small">События недели в выбранном часовом поясе. Красные — высокая важность.</p></div>
+      <div class="fx-cal-tools"><div class="fx-tz-wrap" id="calTzWrap"></div><div class="fx-filters" id="calFilters"></div></div>
     </div>
     <div id="calList" class="fx-cal"><p class="muted small">Загружаю календарь…</p></div>
   </div>
@@ -253,8 +253,46 @@ const SESSIONS = [
   {id: 'london',    name: 'Лондон',    zone: 'Europe/London',   open: 8 * 60, close: 17 * 60, x: 47, y: 29, color: '#22c55e'},
   {id: 'newyork',   name: 'Нью-Йорк',  zone: 'America/New_York', open: 8 * 60, close: 17 * 60, x: 25, y: 38, color: '#ef4444'}
 ];
-let showLocal = true;
+// Грубые обводы регионов на карте: подсвечиваются цветом своей сессии.
+const REGIONS = {
+  newyork: [{x: 12, y: 20, w: 22, h: 26, r: '48% 30% 35% 60%'}, {x: 20, y: 52, w: 12, h: 30, r: '40% 50% 60% 30%'}],
+  london: [{x: 42, y: 22, w: 7, h: 11, r: '50% 40% 45% 55%'}],
+  frankfurt: [{x: 48, y: 22, w: 14, h: 16, r: '45% 55% 40% 50%'}],
+  asia: [{x: 68, y: 28, w: 20, h: 22, r: '50% 40% 55% 45%'}, {x: 86, y: 36, w: 7, h: 10, r: '60% 40% 50% 50%'}],
+  sydney: [{x: 78, y: 64, w: 18, h: 20, r: '45% 55% 50% 40%'}]
+};
+
 const localZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+// Выбор часового пояса просмотра: 'local' либо смещение UTC в часах.
+// Для Intl используем зоны Etc/GMT±N — у них знак обратный, поэтому меняем его руками.
+let viewTz = localStorage.getItem('fizy-tz') || 'local';
+const tzZone = () => {
+  if (viewTz === 'local') return localZone;
+  const off = Number(viewTz);
+  if (!Number.isFinite(off)) return 'UTC';
+  if (off === 0) return 'UTC';
+  return 'Etc/GMT' + (off > 0 ? '-' : '+') + Math.abs(off);
+};
+const tzLabel = () => {
+  if (viewTz === 'local') return T('Ваше время');
+  const off = Number(viewTz);
+  return 'UTC' + (off === 0 ? '' : (off > 0 ? '+' : '−') + Math.abs(off));
+};
+function tzPicker() {
+  const sel = el('select', 'fx-tz');
+  const opts = [['local', T('Ваше время') + ' · ' + localZone]];
+  for (let off = -12; off <= 14; off++) opts.push([String(off), 'UTC' + (off === 0 ? '' : (off > 0 ? '+' : '−') + Math.abs(off))]);
+  sel.innerHTML = opts.map(([v, label]) => `<option value="${esc(v)}">${esc(label)}</option>`).join('');
+  sel.value = viewTz;
+  sel.onchange = () => {
+    viewTz = sel.value;
+    localStorage.setItem('fizy-tz', viewTz);
+    document.querySelectorAll('select.fx-tz').forEach(s => { s.value = viewTz });
+    renderSessions();
+    renderCalendar();
+  };
+  return sel;
+}
 
 // Смещение зоны от UTC в минутах на конкретный момент (с учётом DST)
 function offsetMinutes(zone, date = new Date()) {
@@ -276,7 +314,7 @@ function sessionState(s, date = new Date()) {
   const weekend = day === 0 || day === 6;
   const open = !weekend && localMinutes >= s.open && localMinutes < s.close;
   // окно сессии в UTC → переводим в зону просмотра
-  const viewZone = showLocal ? localZone : 'UTC';
+  const viewZone = tzZone();
   const viewOff = offsetMinutes(viewZone, date);
   const shift = viewOff - off;
   const minutesTo = open
@@ -294,13 +332,23 @@ function renderSessions() {
   const cards = $('#sessionCards'), map = $('#sessionMap');
   if (!cards) return;
   const date = new Date();
-  const viewZone = showLocal ? localZone : 'UTC';
+  const viewZone = tzZone();
   $('#sessionSub').textContent =
-    `${showLocal ? 'Ваш часовой пояс: ' + viewZone : 'Всё время в UTC'} · сейчас ${fmtTime(date, viewZone)} · UTC${(() => { const o = offsetMinutes(viewZone, date); const sign = o < 0 ? '−' : '+'; return sign + hhmm(Math.abs(o)) })()}`;
-  $('#tzToggle').textContent = showLocal ? 'Ваше время' : 'UTC';
+    `${viewTz === 'local' ? T('Ваш часовой пояс') + ': ' + viewZone : T('Часовой пояс') + ': ' + tzLabel()} · ${fmtTime(date, viewZone)} · UTC${(() => { const o = offsetMinutes(viewZone, date); const sign = o < 0 ? '−' : '+'; return sign + hhmm(Math.abs(o)) })()}`;
 
   cards.innerHTML = '';
   map.innerHTML = '';
+  // слой с контурами стран, участвующих в сессиях
+  const regions = el('div', 'fx-regions');
+  SESSIONS.forEach(s => {
+    const open = sessionState(s, date).open;
+    (REGIONS[s.id] || []).forEach(shape => {
+      const r = el('span', 'fx-region' + (open ? ' is-open' : ''));
+      r.style.cssText = `left:${shape.x}%;top:${shape.y}%;width:${shape.w}%;height:${shape.h}%;border-radius:${shape.r};--pin:${s.color}`;
+      regions.append(r);
+    });
+  });
+  map.append(regions);
   SESSIONS.forEach(s => {
     const st = sessionState(s, date);
     const card = el('div', 'fx-session' + (st.open ? ' is-open' : ''));
@@ -319,7 +367,7 @@ function renderSessions() {
   });
   const overlap = SESSIONS.filter(s => sessionState(s, date).open).map(s => s.name);
   if (overlap.length > 1) {
-    const tip = el('div', 'fx-overlap', `Сейчас пересе��аются: <b>${overlap.map(esc).join(' + ')}</b> — лучшая ликвидность дня.`);
+    const tip = el('div', 'fx-overlap', `Сейчас пересекаются: <b>${overlap.map(esc).join(' + ')}</b> — лучшая ликвидность дня.`);
     cards.append(tip);
   }
 }
@@ -345,8 +393,8 @@ function renderNews() {
   if (!items.length) { list.innerHTML = '<p class="muted small">Пока нет новостей по этому фильтру.</p>'; return }
   list.innerHTML = items.slice(0, 25).map(i => `
     <article class="fx-news-item ${i.score >= 8 ? 'is-hot' : ''}">
-      <div class="fx-news-title">${i.score >= 8 ? '<span class="fx-alert">⚠️</span>' : ''}${esc(i.title)}</div>
-      ${i.summary ? `<p class="small muted">${esc(i.summary.slice(0, 180))}${i.summary.length > 180 ? '…' : ''}</p>` : ''}
+      <div class="fx-news-title">${i.score >= 8 ? '<span class="fx-alert">⚠️</span>' : ''}${esc(TR(i.title))}</div>
+      ${i.summary ? (() => { const s = TR(i.summary.slice(0, 400)); return `<p class="small muted">${esc(s.slice(0, 180))}${s.length > 180 ? '…' : ''}</p>` })() : ''}
       <div class="fx-news-meta">
         ${i.tags.map(t => `<span class="fx-tag">${esc(t)}</span>`).join('')}
         <span class="muted">${esc(i.source)} · ${ago(i.time)}</span>
@@ -379,11 +427,46 @@ async function loadNews(force = false) {
     const data = hit || await api('news');
     if (!hit) cacheSet('news', data);
     newsItems = data.items || [];
-    $('#newsUpdated').textContent = data.updated ? 'Обновлено ' + ago(data.updated) : '';
+    $('#newsUpdated').textContent = data.updated ? T('Обновлено') + ' ' + ago(data.updated) : '';
     renderNews();
+    translateNews();
   } catch (e) {
     $('#newsList').innerHTML = `<p class="error">${esc(e.message)}</p>`;
   }
+}
+
+/* ============================================================
+   АВТОПЕРЕВОД ЛЕНТЫ
+   Заголовки и описания приходят на языке источника.
+   Перевод делает сервер (и кеширует на сутки), а браузер дополнительно
+   держит свою копию — так тратится минимум вызовов.
+   ============================================================ */
+let trMap = {};
+let trBusy = false;
+const trKey = () => 'tr.' + lang;
+const TR = s => (lang === 'ru' ? (trMap[s] || s) : (trMap[s] || s));
+
+function loadTrCache() {
+  trMap = cacheGet(trKey(), 86400000) || {};
+}
+
+async function translateNews() {
+  if (!newsItems.length || trBusy) return;
+  loadTrCache();
+  const texts = [];
+  newsItems.slice(0, 25).forEach(i => {
+    if (i.title && !trMap[i.title]) texts.push(i.title);
+    if (i.summary && !trMap[i.summary]) texts.push(i.summary.slice(0, 400));
+  });
+  renderNews();
+  if (!texts.length) return;
+  trBusy = true;
+  try {
+    const res = await api('translate', 'POST', {to: lang, texts});
+    trMap = {...trMap, ...(res.items || {})};
+    cacheSet(trKey(), trMap);
+    renderNews();
+  } catch {} finally { trBusy = false }
 }
 
 /* ============================================================
@@ -707,7 +790,8 @@ function runCalc() {
    СОБЫТИЯ
    ============================================================ */
 function wire() {
-  $('#tzToggle').onclick = () => { showLocal = !showLocal; renderSessions() };
+  $('#tzWrap')?.append(tzPicker());
+  $('#calTzWrap')?.append(tzPicker());
   $('#newsRefresh').onclick = () => loadNews(true);
   $('#newIdea').onclick = () => openPostDialog('idea');
   $('#shareWin').onclick = () => openPostDialog('win');
@@ -798,7 +882,7 @@ function renderCalendar() {
   if (calFilter === 'high') items = items.filter(e => e.impact === 'high');
   if (!items.length) { box.innerHTML = `<p class="muted small">${esc(T('Нет событий по этому фильтру.'))}</p>`; return }
   box.innerHTML = items.slice(0, 40).map(e => {
-    const t = e.time ? new Intl.DateTimeFormat('ru-RU', {weekday: 'short', hour: '2-digit', minute: '2-digit', hour12: false}).format(new Date(e.time)) : '—';
+    const t = e.time ? new Intl.DateTimeFormat(lang === 'ru' ? 'ru-RU' : (lang === 'uk' ? 'uk-UA' : (lang === 'uz' ? 'uz-UZ' : 'en-GB')), {weekday: 'short', hour: '2-digit', minute: '2-digit', hour12: false, timeZone: tzZone()}).format(new Date(e.time)) : '—';
     const im = IMPACT[e.impact] || IMPACT.low;
     return `<div class="fx-cal-row ${im.cls}">
       <span class="fx-cal-time">${esc(t)}</span>
@@ -825,10 +909,22 @@ async function loadCalendar(force = false) {
 /* ============================================================
    ЯЗЫКИ: РУ / УЗБ / АНГЛ / УКР
    Перевод работает по словарю русских надписей: меняются
-   только те тексты, которые совпали целиком — данные пользователя не трогаем.
+   только те тексты, которые совпали целиком — данные пользователя не тр��гаем.
    ============================================================ */
 const LANGS = [{id: 'ru', label: 'РУ'}, {id: 'uz', label: 'UZB'}, {id: 'en', label: 'ENG'}, {id: 'uk', label: 'УКР'}];
 const DICT = {
+  'Ваш часовой пояс': {uz: 'Sizning vaqt mintaqangiz', en: 'Your timezone', uk: 'Ваш часовий пояс'},
+  'Часовой пояс': {uz: 'Vaqt mintaqasi', en: 'Timezone', uk: 'Часовий пояс'},
+  'Обновлено': {uz: 'Yangilandi', en: 'Updated', uk: 'Оновлено'},
+  'Мой аккаунт': {uz: 'Mening hisobim', en: 'My account', uk: 'Мій акаунт'},
+  'Сейчас открыто': {uz: 'Hozir ochiq', en: 'Open now', uk: 'Зараз відкрито'},
+  'Все сессии закрыты.': {uz: 'Barcha sessiyalar yopiq.', en: 'All sessions are closed.', uk: 'Усі сесії закриті.'},
+  'Личный кабинет трейдера': {uz: 'Treyder kabineti', en: 'Trader workspace', uk: 'Особистий кабінет трейдера'},
+  'Сделок': {uz: 'Bitimlar', en: 'Trades', uk: 'Угод'},
+  'Плюсовых': {uz: 'Foydali', en: 'Winners', uk: 'Плюсових'},
+  'Винрейт': {uz: 'Yutuq %', en: 'Win rate', uk: 'Вінрейт'},
+  'События недели в выбранном часовом поясе':
+    {uz: 'Hafta voqealari tanlangan vaqt mintaqasida', en: 'This week\u2019s events in the selected timezone', uk: 'Події тижня у вибраному часовому поясі'},
   'Обзор': {uz: 'Umumiy', en: 'Overview', uk: 'Огляд'},
   'Сделки': {uz: 'Bitimlar', en: 'Trades', uk: 'Угоди'},
   'Калькулятор': {uz: 'Kalkulyator', en: 'Calculator', uk: 'Калькулятор'},
@@ -863,7 +959,7 @@ const DICT = {
   '+ Новая идея': {uz: '+ Yangi gʻoya', en: '+ New idea', uk: '+ Нова ідея'},
   'Чат трейдеров': {uz: 'Treyderlar chati', en: 'Traders chat', uk: 'Чат трейдерів'},
   'Общая комната. Можно прикрепить карточку своей сделки.':
-    {uz: 'Umumiy xona. Bitim kartasini biriktirish mumkin.', en: 'Shared room. You can attach your trade card.', uk: '��пільна кімната. Можна прикріпити картку угоди.'},
+    {uz: 'Umumiy xona. Bitim kartasini biriktirish mumkin.', en: 'Shared room. You can attach your trade card.', uk: 'Спільна кімната. Можна прикріпити картку угоди.'},
   'Отправить': {uz: 'Yuborish', en: 'Send', uk: 'Надіслати'},
   'Онлайн': {uz: 'Onlayn', en: 'Online', uk: 'Онлайн'},
   'Калькулятор размера позиции': {uz: 'Pozitsiya hajmi kalkulyatori', en: 'Position size calculator', uk: 'Калькулятор розміру позиції'},
@@ -927,6 +1023,54 @@ function injectHeader() {
   const actions = document.querySelector('.header-actions');
   if (!actions || actions.querySelector('.fx-lang')) return;
   actions.prepend(langPicker(true));
+
+  // круглый аватар с меню в правом верхнем углу
+  const user = el('div', 'fx-head-user');
+  user.innerHTML = `
+    <button class="fx-bell" id="fxBell" type="button" aria-label="Статус рынка"></button>
+    <button class="fx-head-avatar" id="fxHeadAvatar" type="button" aria-haspopup="true" aria-expanded="false">—</button>
+    <div class="fx-usermenu" id="fxUserMenu" hidden>
+      <div class="fx-usermenu-top">
+        <span class="fx-head-avatar is-big" id="fxMenuAvatar">—</span>
+        <div><b id="fxMenuName">—</b><p class="small muted" id="fxMenuMeta">Личный кабинет трейдера</p></div>
+      </div>
+      <div class="fx-usermenu-stats" id="fxMenuStats"></div>
+      <div class="fx-usermenu-lang" id="fxMenuLang"></div>
+      <button class="fx-usermenu-item" id="fxGoAccount" type="button">Мой аккаунт</button>
+      <button class="fx-usermenu-item is-danger" id="fxLogout" type="button">Выйти</button>
+    </div>`;
+  user.querySelector('.fx-bell').textContent = '🔔';
+  actions.append(user);
+  user.querySelector('#fxMenuLang').append(langPicker(true));
+
+  const menu = user.querySelector('#fxUserMenu');
+  const toggle = show => {
+    menu.hidden = show === undefined ? !menu.hidden : !show;
+    user.querySelector('#fxHeadAvatar').setAttribute('aria-expanded', String(!menu.hidden));
+    if (!menu.hidden) refreshProfile();
+  };
+  user.querySelector('#fxHeadAvatar').onclick = e => { e.stopPropagation(); toggle() };
+  user.querySelector('#fxBell').onclick = e => {
+    e.stopPropagation();
+    const open = SESSIONS.filter(s => sessionState(s).open).map(s => s.name);
+    notice(open.length ? T('Сейчас открыто') + ': ' + open.join(', ') : T('Все сессии закрыты.'));
+  };
+  user.querySelector('#fxGoAccount').onclick = () => {
+    toggle(false);
+    document.querySelector('.workspace-tabs [data-view="accountView"]')?.click();
+  };
+  user.querySelector('#fxLogout').onclick = () => { toggle(false); $('#logout')?.click() };
+  document.addEventListener('click', e => { if (!user.contains(e.target)) toggle(false) });
+}
+
+// короткое всплывающее сообщение в шапке сайта
+function notice(text) {
+  const box = $('#notice');
+  if (!box) return;
+  box.textContent = text;
+  box.hidden = false;
+  clearTimeout(notice._t);
+  notice._t = setTimeout(() => { box.hidden = true }, 4000);
 }
 
 function injectAccountCard() {
@@ -947,11 +1091,18 @@ function injectAccountCard() {
 }
 
 function refreshProfile() {
+  const name = me || document.querySelector('#username')?.textContent?.trim() || 'Трейдер';
+  // аватары: в шапке, в меню и в разделе «Аккаунт»
+  ['#fxAvatar', '#fxHeadAvatar', '#fxMenuAvatar'].forEach(sel => {
+    const node = $(sel);
+    if (!node) return;
+    node.textContent = initials(name);
+    node.style.background = avatarColor(name);
+  });
+  const menuName = $('#fxMenuName');
+  if (menuName) menuName.textContent = name;
   const av = $('#fxAvatar');
   if (!av) return;
-  const name = me || document.querySelector('#username')?.textContent?.trim() || 'Трейдер';
-  av.textContent = initials(name);
-  av.style.background = avatarColor(name);
   $('#fxProfileName').textContent = name;
   const trades = journalCache?.trades ?? [];
   const wins = trades.filter(t => (t.pnl ?? t.rr ?? 0) > 0).length;
@@ -960,7 +1111,9 @@ function refreshProfile() {
     ['Плюсовых', wins],
     ['Винрейт', trades.length ? Math.round(wins / trades.length * 100) + '%' : '—']
   ];
-  $('#fxProfileStats').innerHTML = stats.map(([k, v]) => `<div><span>${esc(k)}</span><strong>${esc(String(v))}</strong></div>`).join('');
+  const html = stats.map(([k, v]) => `<div><span>${esc(T(k))}</span><strong>${esc(String(v))}</strong></div>`).join('');
+  $('#fxProfileStats').innerHTML = html;
+  if ($('#fxMenuStats')) $('#fxMenuStats').innerHTML = html;
 }
 
 async function boot() {

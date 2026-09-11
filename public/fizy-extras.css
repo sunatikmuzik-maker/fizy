@@ -199,3 +199,49 @@
 .fx-profile-stats strong{font-size:19px;font-variant-numeric:tabular-nums}
 .fx-profile-lang{display:flex;align-items:center;gap:10px}
 @media(max-width:620px){.fx-profile{flex-direction:column;align-items:flex-start}}
+
+/* --- выбор часового пояса (UTC) --- */
+.fx-tz-wrap{display:flex;align-items:center;gap:8px}
+.fx-tz{appearance:none;border:1px solid rgba(0,0,0,.12);background:#fff;border-radius:999px;
+  padding:6px 30px 6px 12px;font:inherit;font-size:12px;font-weight:700;color:#111827;cursor:pointer;
+  background-image:linear-gradient(45deg,transparent 50%,#9ca3af 50%),linear-gradient(135deg,#9ca3af 50%,transparent 50%);
+  background-position:calc(100% - 16px) 52%,calc(100% - 11px) 52%;background-size:5px 5px,5px 5px;background-repeat:no-repeat;
+  transition:border-color .18s ease,box-shadow .18s ease,transform .18s ease}
+.fx-tz:hover{border-color:#d4af37;box-shadow:0 6px 16px rgba(15,23,42,.12);transform:translateY(-1px)}
+.fx-tz:focus-visible{outline:2px solid #d4af37;outline-offset:2px}
+.fx-cal-tools{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:10px 0}
+
+/* --- подсветка стран, участвующих в сессиях --- */
+.fx-regions{position:absolute;inset:0;pointer-events:none;z-index:0}
+.fx-region{position:absolute;background:var(--pin,#64748b);opacity:.1;filter:blur(.4px);
+  transition:opacity .4s ease,box-shadow .4s ease}
+.fx-region.is-open{opacity:.32;box-shadow:0 0 22px 6px color-mix(in srgb,var(--pin) 45%,transparent)}
+.fx-map .fx-pin,.fx-map .fx-overlap{position:relative;z-index:1}
+
+/* --- аккаунт в правом верхнем углу --- */
+.fx-head-user{position:relative;display:flex;align-items:center;gap:8px;margin-left:10px}
+.fx-bell{width:34px;height:34px;border-radius:50%;border:1px solid rgba(0,0,0,.1);background:#fff;
+  cursor:pointer;font-size:15px;line-height:1;display:grid;place-items:center;transition:.18s ease}
+.fx-bell:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(15,23,42,.14);border-color:#d4af37}
+.fx-head-avatar{width:36px;height:36px;border:0;border-radius:50%;color:#fff;font-weight:800;font-size:13px;
+  cursor:pointer;display:grid;place-items:center;box-shadow:0 6px 16px rgba(15,23,42,.2);transition:.18s ease}
+.fx-head-avatar:hover{transform:scale(1.06)}
+.fx-head-avatar.is-big{width:46px;height:46px;font-size:16px;cursor:default}
+.fx-usermenu{position:absolute;top:46px;right:0;width:260px;background:#fff;border:1px solid rgba(0,0,0,.09);
+  border-radius:14px;box-shadow:0 20px 46px rgba(15,23,42,.22);padding:14px;z-index:60;
+  display:flex;flex-direction:column;gap:10px}
+.fx-usermenu[hidden]{display:none}
+.fx-usermenu::before{content:"";position:absolute;inset:0 0 auto 0;height:3px;border-radius:14px 14px 0 0;
+  background:linear-gradient(90deg,#88651e,#d4af37,transparent)}
+.fx-usermenu-top{display:flex;align-items:center;gap:12px}
+.fx-usermenu-top b{display:block;font-size:15px}
+.fx-usermenu-top p{margin:2px 0 0}
+.fx-usermenu-stats{display:flex;gap:6px}
+.fx-usermenu-stats div{flex:1;border:1px solid rgba(0,0,0,.08);border-radius:10px;padding:6px 8px;text-align:center}
+.fx-usermenu-stats span{display:block;font-size:9px;letter-spacing:.06em;color:#9ca3af;font-weight:700;text-transform:uppercase}
+.fx-usermenu-stats strong{font-size:15px;font-variant-numeric:tabular-nums}
+.fx-usermenu-item{border:0;background:#f3f4f6;border-radius:10px;padding:9px 12px;font:inherit;font-weight:700;
+  font-size:13px;text-align:left;cursor:pointer;transition:.18s ease}
+.fx-usermenu-item:hover{background:#111827;color:#fff;transform:translateX(2px)}
+.fx-usermenu-item.is-danger:hover{background:#b91c1c}
+@media(max-width:620px){.fx-usermenu{width:min(88vw,260px)}}
