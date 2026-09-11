@@ -10,7 +10,7 @@ binding = "ASSETS"
 not_found_handling = "single-page-application"
 
 [vars]
-PUBLIC_URL = "https://fizy.sunatikmuzik.workers.dev"
+PUBLIC_URL = "https://fizy.tradersjournal.workers.dev"
 ALLOW_SIGNUP = "1"
 FIZY_STORE_NAME = "fizy-journal-v1"
 
