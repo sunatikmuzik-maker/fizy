@@ -18,12 +18,12 @@ FIZY_STORE_NAME = "fizy-journal-v1"
 # и вставь их id сюда вместо заглушек.
 [[kv_namespaces]]
 binding = "FIZY_KV"
-id = "PUT_MAIN_KV_ID_HERE"
+id = "2c6573dcf6ca404a83d21048993b0543"
 
 [[kv_namespaces]]
 binding = "FIZY_KV_RATE"
-id = "PUT_RATE_KV_ID_HERE"
+id = "7dbcabcf7300420d9e934a9fdb8f44aa"
 
 [[kv_namespaces]]
 binding = "FIZY_KV_COMMUNITY"
-id = "PUT_COMMUNITY_KV_ID_HERE"
+id = "47a7d2c1d74c43f7bb54b1d9422bffe4"
