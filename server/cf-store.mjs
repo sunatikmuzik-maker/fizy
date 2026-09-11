@@ -45,12 +45,16 @@ export const createGetStore = env => name => {
 };
 
 // scrypt в Cloudflare Workers недоступен — используем PBKDF2-SHA512 через WebCrypto.
+// Бесплатный тариф Workers даёт 10 мс процессорного времени на запрос,
+// поэтому число итераций умеренное и настраиваемое через FIZY_KDF_ITERATIONS.
 const encoder = new TextEncoder();
-export async function pbkdf2Hex(password, saltValue, length = 64) {
+export const makePbkdf2 = (env = {}) => async (password, saltValue, length = 64) => {
+  const iterations = Number(env.FIZY_KDF_ITERATIONS) || 20000;
   const key = await crypto.subtle.importKey('raw', encoder.encode(String(password)), 'PBKDF2', false, ['deriveBits']);
   const bits = await crypto.subtle.deriveBits(
-    {name: 'PBKDF2', salt: encoder.encode(String(saltValue)), iterations: 210000, hash: 'SHA-512'},
+    {name: 'PBKDF2', salt: encoder.encode(String(saltValue)), iterations, hash: 'SHA-256'},
     key, length * 8
   );
   return [...new Uint8Array(bits)].map(b => b.toString(16).padStart(2, '0')).join('');
-}
+};
+export const pbkdf2Hex = makePbkdf2({});

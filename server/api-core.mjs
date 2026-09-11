@@ -77,5 +77,5 @@ export function createHandler({getStore,env=process.env,passwordHasher}){
   const extra=await community({path,method:req.method,username,parse,req,json});
   if(extra)return extra;
   fail(404,'Действие не найдено.');
- }catch(e){if(!e.status)console.error('FIZY API error:',e.message);return json(e.status||500,{error:e.status?e.message:'Ошибка хранилища. Изменения не подтверждены. Повтори позже.'})}
+ }catch(e){if(!e.status)console.error('FIZY API error:',e.stack||e.message);const detail=env.FIZY_DEBUG==='1'?' ['+(e.message||e)+']':'';return json(e.status||500,{error:(e.status?e.message:'Ошибка хранилища. Изменения не подтверждены. Повтори позже.')+detail})}
 }}
