@@ -26,10 +26,10 @@ async function api(path, method = 'GET', body) {
 }
 const ago = ts => {
   const m = Math.max(0, Math.round((Date.now() - ts) / 60000));
-  if (m < 1) return 'только что';
-  if (m < 60) return m + ' мин назад';
+  if (m < 1) return T('только что');
+  if (m < 60) return m + ' ' + T('мин назад');
   const h = Math.round(m / 60);
-  return h < 24 ? h + ' ч назад' : Math.round(h / 24) + ' дн назад';
+  return h < 24 ? h + ' ' + T('ч назад') : Math.round(h / 24) + ' ' + T('дн назад');
 };
 
 /* ============================================================
@@ -382,7 +382,7 @@ function renderNewsFilters() {
   const box = $('#newsFilters');
   box.innerHTML = '';
   NEWS_TAGS.forEach(t => {
-    const b = el('button', 'fx-chip' + (t === newsFilter ? ' is-active' : ''), esc(t));
+    const b = el('button', 'fx-chip' + (t === newsFilter ? ' is-active' : ''), esc(T(t)));
     b.onclick = () => { newsFilter = t; renderNewsFilters(); renderNews() };
     box.append(b);
   });
@@ -390,15 +390,15 @@ function renderNewsFilters() {
 function renderNews() {
   const list = $('#newsList');
   const items = newsItems.filter(i => newsFilter === 'ВСЁ' || i.tags.includes(newsFilter));
-  if (!items.length) { list.innerHTML = '<p class="muted small">Пока нет новостей по этому фильтру.</p>'; return }
+  if (!items.length) { list.innerHTML = `<p class="muted small">${esc(T('Пока нет новостей по этому фильтру.'))}</p>`; return }
   list.innerHTML = items.slice(0, 25).map(i => `
     <article class="fx-news-item ${i.score >= 8 ? 'is-hot' : ''}">
       <div class="fx-news-title">${i.score >= 8 ? '<span class="fx-alert">⚠️</span>' : ''}${esc(TR(i.title))}</div>
       ${i.summary ? (() => { const s = TR(i.summary.slice(0, 400)); return `<p class="small muted">${esc(s.slice(0, 180))}${s.length > 180 ? '…' : ''}</p>` })() : ''}
       <div class="fx-news-meta">
-        ${i.tags.map(t => `<span class="fx-tag">${esc(t)}</span>`).join('')}
-        <span class="muted">${esc(i.source)} · ${ago(i.time)}</span>
-        ${i.link ? `<a href="${esc(i.link)}" target="_blank" rel="noopener noreferrer">Открыть ↗</a>` : ''}
+        ${i.tags.map(t => `<span class="fx-tag">${esc(T(t))}</span>`).join('')}
+        <span class="muted">${esc(i.source)} · ${esc(ago(i.time))}</span>
+        ${i.link ? `<a href="${esc(i.link)}" target="_blank" rel="noopener noreferrer">${esc(T('Открыть'))} ↗</a>` : ''}
       </div>
     </article>`).join('');
 }
@@ -518,15 +518,15 @@ function renderGhost(score) {
   if (!box) return;
   $('#ghostScore').textContent = score ? score.total : '—';
   $('#ghostHint').textContent = score
-    ? '4 взвешенных фактора по твоему журналу'
-    : 'Зарегистрируйте сделку, чтобы увидеть свой рейтинг.';
+    ? T('4 взвешенных фактора по твоему журналу')
+    : T('Зарегистрируйте сделку, чтобы увидеть свой рейтинг.');
   box.innerHTML = FACTORS.map(f => {
     const v = score ? Math.round(score.values[f.key]) : null;
     const deg = v == null ? 0 : v * 3.6;
     return `<div class="fx-factor">
       <div class="fx-ring" style="--deg:${deg}deg"><span>${v == null ? '—' : v}<small>/100</small></span></div>
-      <div><b>${esc(f.name)}</b> <span class="fx-weight">${f.weight}%</span>
-      <p class="small muted">${score ? esc(score.detail[f.key]) : 'нет данных'}</p></div>
+      <div><b>${esc(T(f.name))}</b> <span class="fx-weight">${f.weight}%</span>
+      <p class="small muted">${score ? esc(score.detail[f.key]) : esc(T('нет данных'))}</p></div>
     </div>`;
   }).join('');
 }
@@ -640,7 +640,7 @@ function renderWins() {
       </div>
       ${reactionsBar(p)}
     </article>`).join('')
-    : '<p class="muted small">Пока никто не делился результатом. Будь первым.</p>';
+    : `<p class="muted small">${esc(T('Пока никто не делился результатом. Будь первым.'))}</p>`;
 }
 
 // форма идеи / результата
@@ -876,19 +876,25 @@ function renderCalFilters() {
 function renderCalendar() {
   const box = $('#calList');
   if (!box) return;
-  const today = new Date().toDateString();
+  const dayKey = ts => new Intl.DateTimeFormat('en-CA', {timeZone: tzZone(), year: 'numeric', month: '2-digit', day: '2-digit'}).format(new Date(ts));
+  const today = dayKey(Date.now());
   let items = calEvents;
-  if (calFilter === 'today') items = items.filter(e => e.time && new Date(e.time).toDateString() === today);
+  if (calFilter === 'today') items = items.filter(e => e.time && dayKey(e.time) === today);
   if (calFilter === 'high') items = items.filter(e => e.impact === 'high');
   if (!items.length) { box.innerHTML = `<p class="muted small">${esc(T('Нет событий по этому фильтру.'))}</p>`; return }
   box.innerHTML = items.slice(0, 40).map(e => {
-    const t = e.time ? new Intl.DateTimeFormat(lang === 'ru' ? 'ru-RU' : (lang === 'uk' ? 'uk-UA' : (lang === 'uz' ? 'uz-UZ' : 'en-GB')), {weekday: 'short', hour: '2-digit', minute: '2-digit', hour12: false, timeZone: tzZone()}).format(new Date(e.time)) : '—';
+    const loc = lang === 'ru' ? 'ru-RU' : (lang === 'uk' ? 'uk-UA' : (lang === 'uz' ? 'uz-UZ' : 'en-GB'));
+    const day = e.time ? new Intl.DateTimeFormat(loc, {weekday: 'short', timeZone: tzZone()}).format(new Date(e.time)) : '';
+    const clock = e.time && !e.allDay
+      ? new Intl.DateTimeFormat(loc, {hour: '2-digit', minute: '2-digit', hour12: false, timeZone: tzZone()}).format(new Date(e.time))
+      : T('весь день');
+    const t = e.time ? `${day} ${clock}` : '—';
     const im = IMPACT[e.impact] || IMPACT.low;
     return `<div class="fx-cal-row ${im.cls}">
       <span class="fx-cal-time">${esc(t)}</span>
       <span class="fx-cal-cur">${esc(e.country)}</span>
       <span class="fx-cal-title">${esc(e.title)}</span>
-      <span class="fx-cal-nums">${e.actual ? `<b>${esc(e.actual)}</b>` : ''}${e.forecast ? `<i>прогноз ${esc(e.forecast)}</i>` : ''}${e.previous ? `<i>было ${esc(e.previous)}</i>` : ''}</span>
+      <span class="fx-cal-nums">${e.actual ? `<b>${esc(e.actual)}</b>` : ''}${e.forecast ? `<i>${esc(T('прогноз'))} ${esc(e.forecast)}</i>` : ''}${e.previous ? `<i>${esc(T('было'))} ${esc(e.previous)}</i>` : ''}</span>
     </div>`;
   }).join('');
 }
@@ -913,6 +919,47 @@ async function loadCalendar(force = false) {
    ============================================================ */
 const LANGS = [{id: 'ru', label: 'РУ'}, {id: 'uz', label: 'UZB'}, {id: 'en', label: 'ENG'}, {id: 'uk', label: 'УКР'}];
 const DICT = {
+  'ВСЁ': {uz: 'HAMMASI', en: 'ALL', uk: 'УСЕ'},
+  'ГЕОПОЛИТИКА': {uz: 'GEOSIYOSAT', en: 'GEOPOLITICS', uk: 'ГЕОПОЛІТИКА'},
+  'МЕТАЛЛЫ': {uz: 'METALLAR', en: 'METALS', uk: 'МЕТАЛИ'},
+  'ВАЛЮТЫ': {uz: 'VALYUTALAR', en: 'CURRENCIES', uk: 'ВАЛЮТИ'},
+  'ИНДЕКСЫ': {uz: 'INDEKSLAR', en: 'INDICES', uk: 'ІНДЕКСИ'},
+  'НЕФТЬ': {uz: 'NEFT', en: 'OIL', uk: 'НАФТА'},
+  'ЦБ': {uz: 'MARKAZIY BANK', en: 'CENTRAL BANKS', uk: 'ЦБ'},
+  'только что': {uz: 'hozirgina', en: 'just now', uk: 'щойно'},
+  'мин назад': {uz: 'daqiqa oldin', en: 'min ago', uk: 'хв тому'},
+  'ч назад': {uz: 'soat oldin', en: 'h ago', uk: 'год тому'},
+  'дн назад': {uz: 'kun oldin', en: 'd ago', uk: 'дн тому'},
+  'Открыть': {uz: 'Ochish', en: 'Open', uk: 'Відкрити'},
+  'Загружаю ленту…': {uz: 'Lenta yuklanmoqda…', en: 'Loading feed…', uk: 'Завантажую стрічку…'},
+  'Загружаю календарь…': {uz: 'Taqvim yuklanmoqda…', en: 'Loading calendar…', uk: 'Завантажую календар…'},
+  'Пока нет новостей по этому фильтру.': {uz: 'Bu filtr boʻyicha yangilik yoʻq.', en: 'No news for this filter yet.', uk: 'Поки немає новин за цим фільтром.'},
+  'прогноз': {uz: 'prognoz', en: 'forecast', uk: 'прогноз'},
+  'было': {uz: 'oldingi', en: 'previous', uk: 'було'},
+  'весь день': {uz: 'kun boʻyi', en: 'all day', uk: 'весь день'},
+  '4 взвешенных фактора по твоему журналу': {uz: 'Jurnalingiz boʻyicha 4 ta omil', en: '4 weighted factors from your journal', uk: '4 зважені фактори з твого журналу'},
+  'Зарегистрируйте сделку, чтобы увидеть свой рейтинг.': {uz: 'Reytingni koʻrish uchun bitim qoʻshing.', en: 'Log a trade to see your score.', uk: 'Додайте угоду, щоб побачити рейтинг.'},
+  'нет данных': {uz: 'maʻlumot yoʻq', en: 'no data', uk: 'немає даних'},
+  'Пока никто не делился результатом. Будь первым.': {uz: 'Hali hech kim natija ulashmadi. Birinchi boʻling.', en: 'Nobody shared a result yet. Be first.', uk: 'Поки ніхто не ділився результатом. Будь першим.'},
+  'События недели в выбранном часовом поясе. Красные — высокая важность.': {uz: 'Tanlangan vaqt mintaqasidagi haftalik voqealar. Qizil — yuqori ahamiyat.', en: 'This week’s events in the selected timezone. Red means high impact.', uk: 'Події тижня у вибраному часовому поясі. Червоні — висока важливість.'},
+  'Haunted Achievements': {uz: 'Kun natijalari', en: 'Haunted Achievements', uk: 'Результати дня'},
+  'Прямой эфир': {uz: 'Jonli efir', en: 'Live', uk: 'Прямий ефір'},
+  'Поиск: идея, пара, тег…': {uz: 'Qidiruv: gʻoya, juftlik, teg…', en: 'Search: idea, pair, tag…', uk: 'Пошук: ідея, пара, тег…'},
+  'Что видишь на графике?': {uz: 'Grafikda nimani koʻryapsiz?', en: 'What do you see on the chart?', uk: 'Що бачиш на графіку?'},
+  'Аналитика': {uz: 'Tahlil', en: 'Analytics', uk: 'Аналітика'},
+  'Рейтинг': {uz: 'Reyting', en: 'Rating', uk: 'Рейтинг'},
+  'Топ трейдеров': {uz: 'Eng yaxshi treyderlar', en: 'Top traders', uk: 'Топ трейдерів'},
+  'Твой торговый журнал.': {uz: 'Savdo jurnalingiz.', en: 'Your trading journal.', uk: 'Твій торговий журнал.'},
+  'Каждый день — осознаннее': {uz: 'Har kuni — ongliroq', en: 'Every day — more mindful', uk: 'Кожен день — усвідомленіше'},
+  'История сделок': {uz: 'Bitimlar tarixi', en: 'Trade history', uk: 'Історія угод'},
+  'Все сделки →': {uz: 'Barcha bitimlar →', en: 'All trades →', uk: 'Усі угоди →'},
+  'Последние сделки': {uz: 'Oxirgi bitimlar', en: 'Recent trades', uk: 'Останні угоди'},
+  'Кривая результата': {uz: 'Natija egri chizigʻi', en: 'Equity curve', uk: 'Крива результату'},
+  'Мысль дня': {uz: 'Kun fikri', en: 'Thought of the day', uk: 'Думка дня'},
+  'Чистый результат, USD': {uz: 'Sof natija, USD', en: 'Net result, USD', uk: 'Чистий результат, USD'},
+  'Результат в R': {uz: 'Natija R da', en: 'Result in R', uk: 'Результат у R'},
+  'Сделок в журнале': {uz: 'Jurnaldagi bitimlar', en: 'Trades in journal', uk: 'Угод у журналі'},
+  'Соблюдение правил': {uz: 'Qoidalarga rioya', en: 'Rule discipline', uk: 'Дотримання правил'},
   'Ваш часовой пояс': {uz: 'Sizning vaqt mintaqangiz', en: 'Your timezone', uk: 'Ваш часовий пояс'},
   'Часовой пояс': {uz: 'Vaqt mintaqasi', en: 'Timezone', uk: 'Часовий пояс'},
   'Обновлено': {uz: 'Yangilandi', en: 'Updated', uk: 'Оновлено'},
@@ -1036,7 +1083,6 @@ function injectHeader() {
       </div>
       <div class="fx-usermenu-stats" id="fxMenuStats"></div>
       <div class="fx-usermenu-lang" id="fxMenuLang"></div>
-      <button class="fx-usermenu-item" id="fxGoAccount" type="button">Мой аккаунт</button>
       <button class="fx-usermenu-item is-danger" id="fxLogout" type="button">Выйти</button>
     </div>`;
   user.querySelector('.fx-bell').textContent = '🔔';
@@ -1054,10 +1100,6 @@ function injectHeader() {
     e.stopPropagation();
     const open = SESSIONS.filter(s => sessionState(s).open).map(s => s.name);
     notice(open.length ? T('Сейчас открыто') + ': ' + open.join(', ') : T('Все сессии закрыты.'));
-  };
-  user.querySelector('#fxGoAccount').onclick = () => {
-    toggle(false);
-    document.querySelector('.workspace-tabs [data-view="accountView"]')?.click();
   };
   user.querySelector('#fxLogout').onclick = () => { toggle(false); $('#logout')?.click() };
   document.addEventListener('click', e => { if (!user.contains(e.target)) toggle(false) });
@@ -1097,7 +1139,8 @@ function refreshProfile() {
     const node = $(sel);
     if (!node) return;
     node.textContent = initials(name);
-    node.style.background = avatarColor(name);
+    // в шапке аватар без фона — только инициалы в тоне темы
+    node.style.background = sel === '#fxAvatar' ? avatarColor(name) : 'transparent';
   });
   const menuName = $('#fxMenuName');
   if (menuName) menuName.textContent = name;
@@ -1126,7 +1169,6 @@ async function boot() {
   renderCalFilters();
   runCalc();
   injectHeader();
-  injectAccountCard();
   applyLang();
   setInterval(dropOldCalcTab, 1500);
   try { const m = await api('me'); me = m.user?.username; csrf = m.csrf } catch {}
@@ -1142,7 +1184,7 @@ new MutationObserver(async () => {
   if (ws && !ws.hidden && !me) {
     try {
       const m = await api('me'); me = m.user?.username; csrf = m.csrf;
-      injectHeader(); injectAccountCard(); applyLang(); dropOldCalcTab();
+      injectHeader(); applyLang(); dropOldCalcTab();
       loadNews(); loadCalendar(); loadPosts(); refreshGhost(); refreshProfile();
     } catch {}
   }

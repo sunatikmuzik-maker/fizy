@@ -140,7 +140,9 @@ const isHigh = e => {
   return v.includes('high') || v.includes('высок') || v === '3';
 };
 const eventTime = e => {
-  const t = Date.parse(e.date || e.time || e.datetime || e.when || '');
+  const v = e.time ?? e.date ?? e.datetime ?? e.when;
+  if (typeof v === 'number' && Number.isFinite(v)) return v;
+  const t = Date.parse(v || '');
   return Number.isFinite(t) ? t : null;
 };
 

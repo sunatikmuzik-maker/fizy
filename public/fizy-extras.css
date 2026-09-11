@@ -7,8 +7,8 @@
 @keyframes fxPulse{70%{box-shadow:0 0 0 8px rgba(22,163,74,0)}100%{box-shadow:0 0 0 0 rgba(22,163,74,0)}}
 
 .fx-filters{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
-.fx-chip{border:1px solid rgba(0,0,0,.12);background:#fff;border-radius:999px;padding:6px 13px;font-size:12px;font-weight:600;cursor:pointer;letter-spacing:.02em}
-.fx-chip.is-active{background:#1f2937;color:#fff;border-color:#1f2937}
+.fx-chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 13px;font-size:12px;font-weight:600;cursor:pointer;letter-spacing:.02em}
+.fx-chip.is-active{background:var(--text);color:var(--bg);border-color:var(--text)}
 .fx-tag{background:rgba(136,101,30,.12);color:#88651e;border-radius:6px;padding:2px 7px;font-size:11px;font-weight:700;letter-spacing:.03em}
 
 /* лента новостей */
@@ -26,9 +26,9 @@
 .fx-pin{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;font-weight:600;white-space:nowrap}
 .fx-pin i{width:9px;height:9px;border-radius:50%;background:rgba(0,0,0,.25)}
 .fx-pin.is-open i{background:var(--pin);box-shadow:0 0 0 5px color-mix(in srgb,var(--pin) 25%,transparent)}
-.fx-pin b{background:#fff;border-radius:6px;padding:2px 7px;box-shadow:0 2px 8px rgba(0,0,0,.1)}
+.fx-pin b{background:var(--surface);border-radius:6px;padding:2px 7px;box-shadow:0 2px 8px rgba(0,0,0,.1)}
 .fx-session-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
-.fx-session{border:1px solid rgba(0,0,0,.08);border-radius:12px;padding:11px;background:#fff}
+.fx-session{border:1px solid var(--line);border-radius:12px;padding:11px;background:var(--surface)}
 .fx-session.is-open{border-color:rgba(22,163,74,.4);background:rgba(22,163,74,.04)}
 .fx-session-top{display:flex;align-items:center;gap:6px;font-size:13px}
 .fx-session-clock{margin-left:auto;font-variant-numeric:tabular-nums;color:#6b7280}
@@ -44,24 +44,24 @@
 .fx-ghost-total strong{font-size:38px;line-height:1}
 .fx-ghost-total span{color:#9ca3af;margin-left:6px}
 .fx-ghost-factors{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
-.fx-factor{display:flex;gap:11px;align-items:center;border:1px solid rgba(0,0,0,.07);border-radius:12px;padding:10px}
+.fx-factor{display:flex;gap:11px;align-items:center;border:1px solid var(--line);border-radius:12px;padding:10px}
 .fx-ring{width:52px;height:52px;flex:0 0 52px;border-radius:50%;display:grid;place-items:center;
   background:conic-gradient(#88651e var(--deg,0deg),rgba(0,0,0,.07) 0)}
-.fx-ring span{width:40px;height:40px;border-radius:50%;background:#fff;display:grid;place-items:center;font-size:13px;font-weight:700;line-height:1}
+.fx-ring span{width:40px;height:40px;border-radius:50%;background:var(--surface);display:grid;place-items:center;font-size:13px;font-weight:700;line-height:1}
 .fx-ring small{font-size:8px;color:#9ca3af;display:block}
 .fx-weight{font-size:11px;background:rgba(0,0,0,.06);border-radius:5px;padding:1px 5px}
 
 /* идеи */
 .fx-hero{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
 .fx-stats{display:grid;grid-template-columns:repeat(2,minmax(140px,1fr));gap:10px}
-.fx-stat{border:1px solid rgba(0,0,0,.07);border-radius:12px;padding:11px}
+.fx-stat{border:1px solid var(--line);border-radius:12px;padding:11px}
 .fx-stat span{font-size:10px;letter-spacing:.09em;color:#9ca3af;font-weight:700}
 .fx-stat strong{display:block;font-size:24px;margin:2px 0}
 .fx-stat small{color:#9ca3af;font-size:11px}
 .fx-idea-toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
 .fx-idea-toolbar input{max-width:280px}
 .fx-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-top:12px}
-.fx-card,.fx-win{border:1px solid rgba(0,0,0,.08);border-radius:14px;padding:13px;background:#fff}
+.fx-card,.fx-win{border:1px solid var(--line);border-radius:14px;padding:13px;background:var(--surface)}
 .fx-card-head{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:6px}
 .fx-card h4{margin:4px 0 8px;font-size:15px}
 .fx-side{font-size:11px;font-weight:800;border-radius:5px;padding:2px 6px;margin-right:6px}
@@ -76,10 +76,10 @@
 
 /* реакции */
 .fx-reactions{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px;align-items:center}
-.fx-react{border:1px solid rgba(0,0,0,.1);background:#fff;border-radius:999px;padding:3px 9px;font-size:12px;cursor:pointer}
+.fx-react{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:3px 9px;font-size:12px;cursor:pointer}
 .fx-react.is-mine{background:rgba(136,101,30,.12);border-color:rgba(136,101,30,.4)}
 .fx-react-add{position:relative}
-.fx-picker{display:none;position:absolute;bottom:120%;left:0;z-index:20;background:#fff;border:1px solid rgba(0,0,0,.1);
+.fx-picker{display:none;position:absolute;bottom:120%;left:0;z-index:20;background:var(--surface);border:1px solid var(--line);
   border-radius:12px;padding:6px;box-shadow:0 12px 30px rgba(0,0,0,.14);width:210px;flex-wrap:wrap;gap:4px}
 .fx-react-add.is-open .fx-picker{display:flex}
 .fx-win-body{display:flex;flex-direction:column;gap:6px}
@@ -87,7 +87,7 @@
 
 /* чат */
 .fx-chat-log{display:flex;flex-direction:column;gap:9px;max-height:460px;overflow:auto;padding:6px 4px}
-.fx-msg{border:1px solid rgba(0,0,0,.07);border-radius:12px;padding:9px 11px;background:#fff;max-width:80%}
+.fx-msg{border:1px solid var(--line);border-radius:12px;padding:9px 11px;background:var(--surface);max-width:80%}
 .fx-msg.is-me{align-self:flex-end;background:rgba(136,101,30,.07);border-color:rgba(136,101,30,.25)}
 .fx-msg-head{display:flex;gap:9px;align-items:baseline}
 .fx-msg p{margin:3px 0 0;font-size:14px;word-break:break-word}
@@ -99,7 +99,7 @@
 .fx-calc{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:18px;align-items:start}
 @media(max-width:900px){.fx-calc{grid-template-columns:1fr}}
 .fx-two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.fx-row{display:flex;justify-content:space-between;gap:14px;padding:9px 0;border-bottom:1px solid rgba(0,0,0,.06)}
+.fx-row{display:flex;justify-content:space-between;gap:14px;padding:9px 0;border-bottom:1px solid var(--line)}
 .fx-row:last-of-type{border-bottom:0}
 .fx-row>div{text-align:right}
 .fx-row strong{display:block;font-size:16px}
@@ -140,9 +140,9 @@
 .fx-view .section-head{align-items:flex-start}
 .fx-ghost-total strong,.fx-stat strong,.fx-row strong,.fx-session-clock,.fx-cal-time{font-variant-numeric:tabular-nums}
 .fx-ghost{background:
-  radial-gradient(120% 140% at 100% 0,rgba(136,101,30,.10),transparent 55%),#fff}
+  radial-gradient(120% 140% at 100% 0,rgba(136,101,30,.10),transparent 55%),var(--surface)}
 .fx-hero{background:
-  radial-gradient(90% 130% at 0 0,rgba(136,101,30,.12),transparent 60%),#fff}
+  radial-gradient(90% 130% at 0 0,rgba(136,101,30,.12),transparent 60%),var(--surface)}
 .fx-view .eyebrow{letter-spacing:.16em;font-size:11px;font-weight:800;color:#88651e}
 
 /* --- карта сессий --- */
@@ -150,27 +150,27 @@
   height:210px;
   background:
     linear-gradient(180deg,rgba(136,101,30,.05),rgba(15,23,42,.04)),
-    radial-gradient(circle at 1px 1px,rgba(15,23,42,.16) 1px,transparent 0) 0 0/10px 10px;
-  border:1px solid rgba(15,23,42,.08);
+    radial-gradient(circle at 1px 1px,var(--grid) 1px,transparent 0) 0 0/10px 10px;
+  border:1px solid var(--line);
   box-shadow:inset 0 0 40px rgba(15,23,42,.06)}
 .fx-map::before{
   content:"";position:absolute;inset:0;opacity:.5;pointer-events:none;
-  background:repeating-linear-gradient(90deg,transparent 0 59px,rgba(15,23,42,.06) 59px 60px),
-             repeating-linear-gradient(0deg,transparent 0 39px,rgba(15,23,42,.06) 39px 40px)}
-.fx-pin b{font-size:10px;letter-spacing:.02em;border:1px solid rgba(15,23,42,.08)}
-.fx-pin.is-open b{background:#111827;color:#fff;border-color:#111827}
+  background:repeating-linear-gradient(90deg,transparent 0 59px,var(--grid) 59px 60px),
+             repeating-linear-gradient(0deg,transparent 0 39px,var(--grid) 39px 40px)}
+.fx-pin b{font-size:10px;letter-spacing:.02em;border:1px solid var(--line)}
+.fx-pin.is-open b{background:var(--text);color:var(--bg);border-color:var(--text)}
 
 /* --- календарь Forex Factory --- */
 .fx-cal{display:flex;flex-direction:column;max-height:420px;overflow:auto}
 .fx-cal-row{display:grid;grid-template-columns:82px 46px minmax(0,1fr) auto;gap:10px;align-items:center;
   padding:9px 11px;border-left:3px solid rgba(15,23,42,.12);border-radius:0 10px 10px 0;margin-bottom:6px;
-  background:rgba(15,23,42,.02);transition:background .15s ease,transform .15s ease}
+  background:var(--grid);transition:background .15s ease,transform .15s ease}
 .fx-cal-row:hover{background:rgba(136,101,30,.08);transform:translateX(2px)}
 .fx-cal-row.i-high{border-left-color:#e11d48;background:rgba(225,29,72,.05)}
 .fx-cal-row.i-med{border-left-color:#f59e0b}
 .fx-cal-row.i-hol{border-left-color:#94a3b8;opacity:.75}
 .fx-cal-time{font-size:12px;color:#6b7280;font-weight:600}
-.fx-cal-cur{font-size:11px;font-weight:800;background:#111827;color:#fff;border-radius:6px;padding:2px 6px;text-align:center}
+.fx-cal-cur{font-size:11px;font-weight:800;background:var(--text);color:var(--bg);border-radius:6px;padding:2px 6px;text-align:center}
 .fx-cal-title{font-size:13px;font-weight:600}
 .fx-cal-nums{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}
 .fx-cal-nums b{font-size:12px;background:rgba(22,163,74,.14);color:#15803d;border-radius:6px;padding:2px 7px}
@@ -178,10 +178,10 @@
 @media(max-width:760px){.fx-cal-row{grid-template-columns:70px 40px 1fr}.fx-cal-nums{grid-column:1/-1;justify-content:flex-start}}
 
 /* --- переключатель языка --- */
-.fx-lang{display:inline-flex;gap:3px;background:rgba(15,23,42,.05);border-radius:999px;padding:3px}
+.fx-lang{display:inline-flex;gap:3px;background:var(--soft);border-radius:999px;padding:3px}
 .fx-lang-btn{border:0;background:transparent;border-radius:999px;padding:4px 10px;font-size:11px;font-weight:800;
   letter-spacing:.04em;cursor:pointer;color:#6b7280}
-.fx-lang-btn.is-active{background:#111827;color:#fff}
+.fx-lang-btn.is-active{background:var(--text);color:var(--bg)}
 .fx-lang.is-compact{margin-right:10px}
 
 /* --- карточка профиля в аккаунте --- */
@@ -194,7 +194,7 @@
 .fx-profile-body{flex:1;min-width:0}
 .fx-profile-body h2{margin:0 0 2px}
 .fx-profile-stats{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0}
-.fx-profile-stats div{border:1px solid rgba(0,0,0,.08);border-radius:10px;padding:7px 12px;min-width:88px}
+.fx-profile-stats div{border:1px solid var(--line);border-radius:10px;padding:7px 12px;min-width:88px}
 .fx-profile-stats span{display:block;font-size:10px;letter-spacing:.08em;color:#9ca3af;font-weight:700;text-transform:uppercase}
 .fx-profile-stats strong{font-size:19px;font-variant-numeric:tabular-nums}
 .fx-profile-lang{display:flex;align-items:center;gap:10px}
@@ -202,8 +202,8 @@
 
 /* --- выбор часового пояса (UTC) --- */
 .fx-tz-wrap{display:flex;align-items:center;gap:8px}
-.fx-tz{appearance:none;border:1px solid rgba(0,0,0,.12);background:#fff;border-radius:999px;
-  padding:6px 30px 6px 12px;font:inherit;font-size:12px;font-weight:700;color:#111827;cursor:pointer;
+.fx-tz{appearance:none;border:1px solid var(--line);background:var(--surface);border-radius:999px;
+  padding:6px 30px 6px 12px;font:inherit;font-size:12px;font-weight:700;color:var(--text);cursor:pointer;
   background-image:linear-gradient(45deg,transparent 50%,#9ca3af 50%),linear-gradient(135deg,#9ca3af 50%,transparent 50%);
   background-position:calc(100% - 16px) 52%,calc(100% - 11px) 52%;background-size:5px 5px,5px 5px;background-repeat:no-repeat;
   transition:border-color .18s ease,box-shadow .18s ease,transform .18s ease}
@@ -220,14 +220,14 @@
 
 /* --- аккаунт в правом верхнем углу --- */
 .fx-head-user{position:relative;display:flex;align-items:center;gap:8px;margin-left:10px}
-.fx-bell{width:34px;height:34px;border-radius:50%;border:1px solid rgba(0,0,0,.1);background:#fff;
+.fx-bell{width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:var(--surface);
   cursor:pointer;font-size:15px;line-height:1;display:grid;place-items:center;transition:.18s ease}
 .fx-bell:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(15,23,42,.14);border-color:#d4af37}
 .fx-head-avatar{width:36px;height:36px;border:0;border-radius:50%;color:#fff;font-weight:800;font-size:13px;
   cursor:pointer;display:grid;place-items:center;box-shadow:0 6px 16px rgba(15,23,42,.2);transition:.18s ease}
 .fx-head-avatar:hover{transform:scale(1.06)}
 .fx-head-avatar.is-big{width:46px;height:46px;font-size:16px;cursor:default}
-.fx-usermenu{position:absolute;top:46px;right:0;width:260px;background:#fff;border:1px solid rgba(0,0,0,.09);
+.fx-usermenu{position:absolute;top:46px;right:0;width:260px;background:var(--surface);border:1px solid var(--line);
   border-radius:14px;box-shadow:0 20px 46px rgba(15,23,42,.22);padding:14px;z-index:60;
   display:flex;flex-direction:column;gap:10px}
 .fx-usermenu[hidden]{display:none}
@@ -237,11 +237,11 @@
 .fx-usermenu-top b{display:block;font-size:15px}
 .fx-usermenu-top p{margin:2px 0 0}
 .fx-usermenu-stats{display:flex;gap:6px}
-.fx-usermenu-stats div{flex:1;border:1px solid rgba(0,0,0,.08);border-radius:10px;padding:6px 8px;text-align:center}
+.fx-usermenu-stats div{flex:1;border:1px solid var(--line);border-radius:10px;padding:6px 8px;text-align:center}
 .fx-usermenu-stats span{display:block;font-size:9px;letter-spacing:.06em;color:#9ca3af;font-weight:700;text-transform:uppercase}
 .fx-usermenu-stats strong{font-size:15px;font-variant-numeric:tabular-nums}
-.fx-usermenu-item{border:0;background:#f3f4f6;border-radius:10px;padding:9px 12px;font:inherit;font-weight:700;
+.fx-usermenu-item{border:0;background:var(--soft);border-radius:10px;padding:9px 12px;font:inherit;font-weight:700;
   font-size:13px;text-align:left;cursor:pointer;transition:.18s ease}
-.fx-usermenu-item:hover{background:#111827;color:#fff;transform:translateX(2px)}
+.fx-usermenu-item:hover{background:var(--text);color:var(--bg);transform:translateX(2px)}
 .fx-usermenu-item.is-danger:hover{background:#b91c1c}
 @media(max-width:620px){.fx-usermenu{width:min(88vw,260px)}}

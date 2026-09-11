@@ -126,6 +126,72 @@ async function fetchText(url, ms = 7000) {
 }
 
 // ---------- экономический календарь Forex Factory ----------
+// ---------- время событий Forex Factory ----------
+// В XML дата идёт как MM-DD-YYYY, время — как "8:30am" в восточной зоне США.
+// Date.parse такой формат не понимает и раньше все события падали на полночь UTC
+// (в UTC+3 это выглядело как 03:00 у всех строк).
+const FF_ZONE = 'America/New_York';
+
+function zoneOffset(ts, zone) {
+  const dtf = new Intl.DateTimeFormat('en-US', {
+    timeZone: zone, hour12: false,
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit'
+  });
+  const p = {};
+  for (const part of dtf.formatToParts(new Date(ts))) p[part.type] = part.value;
+  const asUTC = Date.UTC(+p.year, +p.month - 1, +p.day, p.hour === '24' ? 0 : +p.hour, +p.minute, +p.second);
+  return asUTC - ts;
+}
+
+// локальное время зоны -> UTC (два прохода учитывают переход на летнее время)
+function zonedTime(y, mo, d, h, mi, zone) {
+  const naive = Date.UTC(y, mo - 1, d, h, mi);
+  let ts = naive - zoneOffset(naive, zone);
+  ts = naive - zoneOffset(ts, zone);
+  return ts;
+}
+
+function parseFfDate(raw) {
+  const v = String(raw || '').trim();
+  let m = /^(\d{1,2})-(\d{1,2})-(\d{4})$/.exec(v);            // 09-12-2026 (MM-DD-YYYY)
+  if (m) return {y: +m[3], mo: +m[1], d: +m[2]};
+  m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(v);             // 09/12/2026
+  if (m) return {y: +m[3], mo: +m[1], d: +m[2]};
+  m = /^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(v);                 // 2026-09-12
+  if (m) return {y: +m[1], mo: +m[2], d: +m[3]};
+  return null;
+}
+
+function parseFfTime(raw) {
+  const v = String(raw || '').trim().toLowerCase().replace(/\s+/g, '');
+  const m = /^(\d{1,2}):(\d{2})(am|pm)?$/.exec(v);
+  if (!m) return null;                                       // All Day / Tentative / пусто
+  let h = +m[1];
+  const mi = +m[2];
+  const ap = m[3];
+  if (h > 23 || mi > 59) return null;
+  if (ap === 'pm' && h < 12) h += 12;
+  if (ap === 'am' && h === 12) h = 0;
+  return {h, mi};
+}
+
+function ffTimestamp(dateRaw, timeRaw) {
+  const raw = String(dateRaw || '').trim();
+  if (/T\d{2}:\d{2}/.test(raw)) {                             // полный ISO с временем
+    const iso = Date.parse(raw);
+    if (Number.isFinite(iso)) return {time: iso, allDay: false};
+  }
+  const d = parseFfDate(raw);
+  if (!d) {
+    const fallback = Date.parse(raw);
+    return Number.isFinite(fallback) ? {time: fallback, allDay: true} : {time: null, allDay: true};
+  }
+  const t = parseFfTime(timeRaw);
+  if (!t) return {time: zonedTime(d.y, d.mo, d.d, 0, 0, FF_ZONE), allDay: true};
+  return {time: zonedTime(d.y, d.mo, d.d, t.h, t.mi, FF_ZONE), allDay: false};
+}
+
 function parseCalendar(xml) {
   const out = [];
   const blocks = xml.match(/<event>[\s\S]*?<\/event>/gi) || [];
@@ -135,15 +201,15 @@ function parseCalendar(xml) {
     const country = field(b, 'country');
     const impact = field(b, 'impact').toLowerCase();
     const dateRaw = field(b, 'date'), timeRaw = field(b, 'time');
-    let ts = Date.parse(dateRaw + ' ' + timeRaw);
-    if (!Number.isFinite(ts)) ts = Date.parse(dateRaw);
+    const when = ffTimestamp(dateRaw, timeRaw);
     out.push({
       id: (country + title + dateRaw + timeRaw).slice(0, 90),
       title: title.slice(0, 160),
       country: country.slice(0, 8),
       impact: impact.includes('high') ? 'high' : impact.includes('medium') ? 'medium' : impact.includes('holiday') ? 'holiday' : 'low',
-      time: Number.isFinite(ts) ? ts : null,
-      allDay: !/\d/.test(timeRaw),
+      time: when.time,
+      allDay: when.allDay,
+      timeLabel: String(timeRaw || '').trim(),
       forecast: clean(field(b, 'forecast'), 24),
       previous: clean(field(b, 'previous'), 24),
       actual: clean(field(b, 'actual'), 24)
@@ -153,7 +219,7 @@ function parseCalendar(xml) {
 }
 
 async function calendar(store) {
-  const cached = await load(store, 'calendar/cache', null);
+  const cached = await load(store, 'calendar/cache-v2', null);
   if (cached && now() - cached.updated < 1800000) return {events: cached.events, updated: cached.updated, cached: true};
   let events = [];
   for (const url of FF_URLS) {
@@ -162,7 +228,7 @@ async function calendar(store) {
   }
   if (!events.length && cached) return {events: cached.events, updated: cached.updated, stale: true};
   const payload = {events: events.slice(0, 120), updated: now(), labels: FF_TITLES.ru};
-  try { await store.setJSON('calendar/cache', payload) } catch {}
+  try { await store.setJSON('calendar/cache-v2', payload) } catch {}
   return payload;
 }
 

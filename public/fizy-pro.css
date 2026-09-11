@@ -98,6 +98,6 @@
 }
 .fxp-ring span {
   width: 98px; height: 98px; border-radius: 50%; display: grid; place-items: center;
-  background: #fff; font-size: 30px; font-weight: 700; color: #88651e;
+  background: var(--surface); font-size: 30px; font-weight: 700; color: #88651e;
 }
 @media (max-width: 720px) { .fxp-hero { grid-template-columns: 1fr } }
