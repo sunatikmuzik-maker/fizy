@@ -10,7 +10,7 @@ binding = "ASSETS"
 not_found_handling = "single-page-application"
 
 [vars]
-PUBLIC_URL = "https://fizy.rjournal.workers.dev"
+PUBLIC_URL = "https://fizy.tradersjournal.workers.dev"
 ALLOW_SIGNUP = "1"
 FIZY_STORE_NAME = "fizy-journal-v1"
 
@@ -18,12 +18,12 @@ FIZY_STORE_NAME = "fizy-journal-v1"
 # и вставь их id сюда вместо заглушек.
 [[kv_namespaces]]
 binding = "FIZY_KV"
-id = "2c6573dcf6ca404a83d21048993b0543"
+id = "PUT_MAIN_KV_ID_HERE"
 
 [[kv_namespaces]]
 binding = "FIZY_KV_RATE"
-id = "7dbcabcf7300420d9e934a9fdb8f44aa"
+id = "PUT_RATE_KV_ID_HERE"
 
 [[kv_namespaces]]
 binding = "FIZY_KV_COMMUNITY"
-id = "47a7d2c1d74c43f7bb54b1d9422bffe4"
+id = "PUT_COMMUNITY_KV_ID_HERE"

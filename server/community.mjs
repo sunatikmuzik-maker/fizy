@@ -21,7 +21,8 @@ const load = async (store, key, fallback) =>
   (await store.get(key, {type: 'json', consistency: 'strong'})) ?? fallback;
 
 // ---------- анти-спам ----------
-const LIMITS = {chat: {max: 12, window: 60000}, post: {max: 6, window: 300000}, react: {max: 60, window: 60000}};
+const LIMITS = {chat: {max: 12, window: 60000}, post: {max: 6, window: 300000}, react: {max: 60, window: 60000},
+  rating: {max: 12, window: 3600000}};
 async function throttle(store, kind, username) {
   const {max, window} = LIMITS[kind];
   await cas(store, `rate/${kind}/${username}`, old => {
@@ -364,6 +365,45 @@ async function translate(store, body) {
 }
 
 /* =========================================================
+   Рейтинг трейдеров (по дисциплине, не по прибыли)
+   Сами сделки никуда не отправляются — только обезличенные показатели.
+   ========================================================= */
+const RATING_KEY = 'rating/global';
+const int = (v, max) => {
+  const n = Math.round(Number(v));
+  return Number.isFinite(n) ? Math.min(max, Math.max(0, n)) : 0;
+};
+
+async function ratingPut(store, username, body) {
+  await throttle(store, 'rating', username);
+  const row = {
+    username,
+    score: int(body?.score, 100),
+    discipline: int(body?.discipline, 100),
+    trades: int(body?.trades, 100000),
+    days: int(body?.days, 100000),
+    winrate: int(body?.winrate, 100),
+    streak: int(body?.streak, 10000),
+    checklist: int(body?.checklist, 100),
+    updated: now()
+  };
+  const data = await cas(store, RATING_KEY, old => {
+    const rows = (old?.rows ?? []).filter(r => r.username !== username);
+    rows.push(row);
+    rows.sort((a, b) => b.score - a.score || b.discipline - a.discipline || b.trades - a.trades);
+    return {rows: rows.slice(0, 300)};
+  }, {rows: []});
+  return ratingView(data, username);
+}
+
+function ratingView(data, username) {
+  const alive = (data?.rows ?? []).filter(r => now() - r.updated < 45 * 86400000);
+  const top = alive.slice(0, 50);
+  const place = alive.findIndex(r => r.username === username);
+  return {rows: top, me: username, place: place < 0 ? null : place + 1, total: alive.length};
+}
+
+/* =========================================================
    Маршрутизатор расширений
    ========================================================= */
 export function createCommunity({getStore, env = process.env}) {
@@ -390,6 +430,11 @@ export function createCommunity({getStore, env = process.env}) {
     if (path === '/api/posts/react' && method === 'POST') return json(200, await postsReact(s, username, await parse(req)));
     if (path === '/api/posts/status' && method === 'POST') return json(200, await postsUpdate(s, username, await parse(req)));
     if (path === '/api/posts/delete' && method === 'POST') return json(200, await postsDelete(s, username, await parse(req)));
+
+    if (path === '/api/rating' && method === 'GET')
+      return json(200, ratingView(await load(s, RATING_KEY, {rows: []}), username));
+    if (path === '/api/rating' && method === 'POST')
+      return json(200, await ratingPut(s, username, await parse(req)));
 
     return null;
   };
